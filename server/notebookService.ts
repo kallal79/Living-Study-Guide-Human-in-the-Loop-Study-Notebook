@@ -1,8 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { initialNotebookState } from '../src/data/initialData';
-import { NotebookState, StudyItem } from '../src/types';
+import {
+  GeneratedQuizQuestion,
+  ItemCategory,
+  NotebookState,
+  StudyItem,
+  StudySessionLog,
+} from '../src/types';
 import { extractStudyItemsFromText } from '../src/utils/extractor';
+import { generateDynamicQuiz, QuizGenerationOptions } from '../src/utils/quizGenerator';
 
 const DATA_DIR = path.join(process.cwd(), 'server', 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
@@ -41,6 +48,60 @@ export function saveState(state: NotebookState): void {
   }
 }
 
+export function createManualItem(payload: {
+  title: string;
+  tag?: string;
+  category?: ItemCategory;
+  sourceFact: string;
+  studyInterpretation: string;
+  flashcardFront?: string;
+}): StudyItem {
+  const title = payload.title.trim();
+  const sourceFact = payload.sourceFact.trim();
+  const studyInterpretation = payload.studyInterpretation.trim();
+  const tag = (payload.tag || 'Custom').trim();
+  const category: ItemCategory = payload.category || 'CONCEPT';
+
+  const newItem: StudyItem = {
+    id: `manual-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    documentId: 'doc-manual',
+    documentTitle: 'Manual Study Entry',
+    sourceCitation: `${tag} | User Verified Entry`,
+    tag,
+    category,
+    title,
+    sourceFact,
+    studyInterpretation,
+    status: 'pending', // Always starts in Review Queue: Nothing saves without a check
+    userEdited: true,
+    originalInterpretation: studyInterpretation,
+    createdAt: new Date().toISOString(),
+    flashcard: {
+      front: payload.flashcardFront?.trim() || `Explain the source concept: "${title}"`,
+      back: studyInterpretation,
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0,
+    },
+    quizQuestion: {
+      question: `According to your notes on "${title}": what does the source establish?`,
+      options: [
+        studyInterpretation,
+        'The opposite condition holds true across all contexts.',
+        'Extraneous detail not present in your notes.',
+        'Unverified historical conjecture.',
+      ],
+      correctOptionIndex: 0,
+      explanation: `Source Fact: "${sourceFact}"`,
+    },
+  };
+
+  const state = readState();
+  state.items.unshift(newItem);
+  saveState(state);
+  return newItem;
+}
+
 export function approveItemById(id: string): StudyItem | null {
   const state = readState();
   const idx = state.items.findIndex((i) => i.id === id);
@@ -57,6 +118,16 @@ export function discardItemById(id: string): StudyItem | null {
   if (idx === -1) return null;
   state.items[idx].status = 'discarded';
   state.items[idx].reviewedAt = new Date().toISOString();
+  saveState(state);
+  return state.items[idx];
+}
+
+export function restoreItemToQueueById(id: string): StudyItem | null {
+  const state = readState();
+  const idx = state.items.findIndex((i) => i.id === id);
+  if (idx === -1) return null;
+  state.items[idx].status = 'pending';
+  state.items[idx].reviewedAt = undefined;
   saveState(state);
   return state.items[idx];
 }
@@ -136,7 +207,7 @@ export function ingestTextDocument(payload: {
   courseTopic?: string;
   fileName?: string;
   studyGoal?: NotebookState['studyGoal'];
-}): { count: number; items: StudyItem[] } {
+}): { count: number; items: StudyItem[]; documentId: string } {
   const { rawText, title, courseTopic, fileName, studyGoal } = payload;
   const newItems = extractStudyItemsFromText(rawText, {
     documentTitle: title || 'Uploaded Document',
@@ -145,10 +216,11 @@ export function ingestTextDocument(payload: {
     studyGoal: studyGoal || 'exam_review',
   });
 
+  const docId = newItems[0]?.documentId || `doc-${Date.now().toString(36)}`;
   const state = readState();
   state.items.unshift(...newItems);
   state.documents.unshift({
-    id: `doc-${Date.now().toString(36)}`,
+    id: docId,
     title: title || 'Uploaded Document',
     courseTopic: courseTopic || 'General Study',
     fileName: fileName || 'uploaded_notes.txt',
@@ -159,6 +231,31 @@ export function ingestTextDocument(payload: {
   });
 
   saveState(state);
-  return { count: newItems.length, items: newItems };
+  return { count: newItems.length, items: newItems, documentId: docId };
 }
 
+export function generateQuizFromState(
+  options: QuizGenerationOptions & { items?: StudyItem[] } = {}
+): {
+  questions: GeneratedQuizQuestion[];
+  totalApproved: number;
+  generatedAt: string;
+} {
+  const state = readState();
+  const sourceItems =
+    Array.isArray(options.items) && options.items.length > 0 ? options.items : state.items;
+  const approvedCount = sourceItems.filter((i) => i.status === 'approved').length;
+  const questions = generateDynamicQuiz(sourceItems, options);
+  return {
+    questions,
+    totalApproved: approvedCount,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+export function recordSessionLog(session: StudySessionLog): StudySessionLog {
+  const state = readState();
+  state.sessions.unshift(session);
+  saveState(state);
+  return session;
+}

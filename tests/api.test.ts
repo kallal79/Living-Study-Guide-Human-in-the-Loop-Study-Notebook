@@ -126,4 +126,55 @@ describe('Living Study Guide In-Process API Middleware', () => {
     const missing = await invokeHandler('GET', '/api/does-not-exist');
     expect(missing.statusCode).toBe(404);
   });
+
+  it('generates varied non-repeating quizzes via POST /api/quiz/generate and supports manual card creation + restore + sessions', async () => {
+    const q1 = await invokeHandler('POST', '/api/quiz/generate', {
+      style: 'mixed',
+      count: 4,
+    });
+    expect(q1.statusCode).toBe(200);
+    expect(q1.json.questions.length).toBe(4);
+
+    const sigs1 = q1.json.questions.map((q: any) => q.signature);
+    const q2 = await invokeHandler('POST', '/api/quiz/generate', {
+      style: 'mixed',
+      count: 4,
+      excludeSignatures: sigs1,
+    });
+    expect(q2.statusCode).toBe(200);
+    expect(q2.json.questions.length).toBe(4);
+    const sigs2 = q2.json.questions.map((q: any) => q.signature);
+    expect(sigs2.some((s: string) => sigs1.includes(s))).toBe(false);
+
+    // Manual single card creation enters pending Review Queue
+    const created = await invokeHandler('POST', '/api/items', {
+      title: 'Zero Trust Verification',
+      tag: 'Security',
+      category: 'SYSTEM',
+      sourceFact: 'Zero trust requires explicit verification for every access request.',
+      studyInterpretation: 'Every request must be verified regardless of origin.',
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json.item.status).toBe('pending');
+
+    // Approve then restore back to queue
+    const id = created.json.item.id;
+    const approved = await invokeHandler('POST', `/api/items/${id}/approve`);
+    expect(approved.json.item.status).toBe('approved');
+    const restored = await invokeHandler('POST', `/api/items/${id}/restore`);
+    expect(restored.json.item.status).toBe('pending');
+
+    // Record study session
+    const sess = await invokeHandler('POST', '/api/sessions', {
+      id: 'sess-api-test',
+      date: new Date().toISOString(),
+      durationMinutes: 10,
+      itemsReviewed: 4,
+      quizScore: 4,
+      quizTotal: 4,
+      notes: 'API session verification',
+    });
+    expect(sess.statusCode).toBe(200);
+    expect(sess.json.session.id).toBe('sess-api-test');
+  });
 });

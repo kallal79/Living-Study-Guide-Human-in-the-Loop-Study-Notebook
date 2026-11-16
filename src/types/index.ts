@@ -9,6 +9,31 @@ export type ItemCategory =
 
 export type ItemStatus = 'pending' | 'approved' | 'discarded';
 
+export type QuizQuestionFormat =
+  | 'core_mcq'
+  | 'source_evidence'
+  | 'concept_recall'
+  | 'quote_cloze'
+  | 'grounding_check';
+
+export interface GeneratedQuizQuestion {
+  id: string;
+  itemId: string;
+  title: string;
+  tag: string;
+  category: ItemCategory;
+  format: QuizQuestionFormat;
+  formatLabel: string;
+  question: string;
+  promptContext?: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+  sourceFact: string;
+  sourceCitation: string;
+  signature: string;
+}
+
 export interface StudyItem {
   id: string;
   documentId: string;
@@ -72,4 +97,3 @@ export interface NotebookState {
   sessions: StudySessionLog[];
   lastBackupDate?: string;
 }
-

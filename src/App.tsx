@@ -28,6 +28,14 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isMissionFlowOpen, setIsMissionFlowOpen] = useState<boolean>(false);
   const [targetItemId, setTargetItemId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3500);
+  };
 
   // Initialize and load saved state
   useEffect(() => {
@@ -176,6 +184,16 @@ export const App: React.FC = () => {
       documents: [newDoc, ...prev.documents],
       activeTopic: newDoc.courseTopic || prev.activeTopic,
     }));
+    showToast(`Added ${newItems.length} grounded candidate${newItems.length === 1 ? '' : 's'} to Review Queue.`);
+    setActiveTab('review');
+  };
+
+  const handleAddSingleItem = (newItem: StudyItem) => {
+    updateState((prev) => ({
+      ...prev,
+      items: [newItem, ...prev.items],
+    }));
+    showToast(`Created "${newItem.title}" in Review Queue for verification.`);
     setActiveTab('review');
   };
 
@@ -186,7 +204,7 @@ export const App: React.FC = () => {
     }));
   };
 
-  const handleRecordQuizResult = (score: number, total: number) => {
+  const handleRecordQuizResult = (score: number, total: number, details?: string) => {
     const log: StudySessionLog = {
       id: `quiz-session-${Date.now().toString(36)}`,
       date: new Date().toISOString(),
@@ -194,7 +212,7 @@ export const App: React.FC = () => {
       itemsReviewed: total,
       quizScore: score,
       quizTotal: total,
-      notes: `Quick quiz completed with score ${score}/${total}.`,
+      notes: details || `Quick quiz completed with score ${score}/${total}.`,
     };
     handleRecordSession(log);
   };
@@ -279,8 +297,12 @@ export const App: React.FC = () => {
           <Header
             state={state}
             onLockNotebook={handleLockNotebook}
-            onExportBackup={() => downloadBackup(state)}
+            onExportBackup={() => {
+              downloadBackup(state);
+              showToast('Downloaded full study guide backup (.json).');
+            }}
             onOpenMobileNav={() => setIsMobileNavOpen(true)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
 
           {/* Dynamic Route Content */}
@@ -365,6 +387,7 @@ export const App: React.FC = () => {
         isOpen={isUploaderOpen}
         onClose={() => setIsUploaderOpen(false)}
         onIngestItems={handleIngestItems}
+        onAddSingleItem={handleAddSingleItem}
       />
 
       <SettingsModal
@@ -396,6 +419,15 @@ export const App: React.FC = () => {
         isOpen={isMissionFlowOpen}
         onClose={() => setIsMissionFlowOpen(false)}
       />
+
+      {toastMessage && (
+        <div
+          role="status"
+          className="fixed bottom-5 right-5 z-40 px-4 py-2.5 bg-[#1A1815] text-[#FAF7F0] text-xs font-medium rounded-xl shadow-lg border border-[#3A352F] animate-fade-in no-print"
+        >
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

@@ -32,6 +32,7 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
   const [isLocked, setIsLocked] = useState(state.isLocked);
   const [passcode, setPasscode] = useState(state.passcode);
   const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Keep local form synchronized if presets are switched while modal is open
   useEffect(() => {
@@ -69,6 +70,7 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed && Array.isArray(parsed.items)) {
+          setErrorMessage('');
           onRestoreState(parsed);
           setStatusMessage('Backup restored and saved!');
           setTimeout(() => {
@@ -76,10 +78,10 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
             onClose();
           }, 800);
         } else {
-          alert('Invalid backup file structure.');
+          setErrorMessage('Invalid backup file structure. Expected a Living Study Guide JSON export.');
         }
       } catch {
-        alert('Failed to parse backup JSON file.');
+        setErrorMessage('Failed to parse backup JSON file. Make sure the file is valid JSON.');
       }
     };
     reader.readAsText(file);
@@ -117,6 +119,12 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
           <div className="p-3 mb-4 rounded-xl bg-[#E7F0E9] border border-[#A3D7BD] text-xs font-semibold text-[#166534] flex items-center gap-2">
             <Check className="w-4 h-4 text-[#166534]" />
             <span>{statusMessage}</span>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="p-3 mb-4 rounded-xl bg-[#FCE8E8] border border-[#F2B6B6] text-xs font-semibold text-[#8C2C2C]">
+            {errorMessage}
           </div>
         )}
 

@@ -1,5 +1,6 @@
-import { NotebookState, StudyItem } from '../types';
+import { GeneratedQuizQuestion, NotebookState, StudyItem } from '../types';
 import { initialNotebookState } from '../data/initialData';
+import { generateDynamicQuiz, QuizGenerationOptions } from './quizGenerator';
 
 const LOCAL_STORAGE_KEY = 'living_study_guide_state_v1';
 
@@ -25,7 +26,6 @@ function safeGetLocalStorage(key: string): string | null {
 }
 
 export async function loadNotebookState(): Promise<NotebookState> {
-  // Try fetching from backend API first
   try {
     const res = await fetch('/api/notebook');
     if (res.ok) {
@@ -39,7 +39,6 @@ export async function loadNotebookState(): Promise<NotebookState> {
     // Backend may not be running in static preview; use localStorage
   }
 
-  // Fallback to localStorage
   try {
     const cached = safeGetLocalStorage(LOCAL_STORAGE_KEY);
     if (cached) {
@@ -52,16 +51,13 @@ export async function loadNotebookState(): Promise<NotebookState> {
     console.error('Error reading from localStorage', err);
   }
 
-  // Fallback to initial seed data
   safeSetLocalStorage(LOCAL_STORAGE_KEY, JSON.stringify(initialNotebookState));
   return structuredClone(initialNotebookState);
 }
 
 export async function saveNotebookState(state: NotebookState): Promise<void> {
-  // Always update localStorage immediately
   safeSetLocalStorage(LOCAL_STORAGE_KEY, JSON.stringify(state));
 
-  // Try updating backend API
   try {
     await fetch('/api/notebook', {
       method: 'POST',
@@ -71,6 +67,49 @@ export async function saveNotebookState(state: NotebookState): Promise<void> {
   } catch {
     // Offline or backend unavailable, local persistence is already guaranteed
   }
+}
+
+/**
+ * Fetches freshly generated, non-repeating quiz questions from POST /api/quiz/generate,
+ * passing the active items and excluded signatures so every run creates different questions.
+ * Gracefully falls back to local grounded generation if offline.
+ */
+export async function fetchGeneratedQuiz(
+  items: StudyItem[],
+  options: QuizGenerationOptions = {}
+): Promise<{
+  questions: GeneratedQuizQuestion[];
+  source: 'api' | 'local';
+  generatedAt: string;
+}> {
+  try {
+    const res = await fetch('/api/quiz/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...options,
+        items,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.questions)) {
+        return {
+          questions: data.questions,
+          source: 'api',
+          generatedAt: data.generatedAt || new Date().toISOString(),
+        };
+      }
+    }
+  } catch {
+    // Offline fallback below
+  }
+
+  return {
+    questions: generateDynamicQuiz(items, options),
+    source: 'local',
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 export function downloadBackup(state: NotebookState) {
@@ -133,4 +172,3 @@ export function exportAnkiCSV(items: StudyItem[]): void {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-

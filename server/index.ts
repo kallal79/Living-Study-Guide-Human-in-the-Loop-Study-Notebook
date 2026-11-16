@@ -2,15 +2,19 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { NotebookState, StudyItem } from '../src/types';
+import { NotebookState, StudyItem, StudySessionLog } from '../src/types';
 import {
   readState,
   saveState,
+  createManualItem,
   approveItemById,
   discardItemById,
+  restoreItemToQueueById,
   updateItemById,
   mergeItemsById,
   ingestTextDocument,
+  generateQuizFromState,
+  recordSessionLog,
 } from './notebookService';
 
 const app = express();
@@ -19,7 +23,6 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// API Routes
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
@@ -42,6 +45,21 @@ app.post(['/api/notebook', '/api/restore'], (req, res) => {
   res.json({ success: true, count: state.items.length });
 });
 
+app.post('/api/quiz/generate', (req, res) => {
+  const result = generateQuizFromState(req.body || {});
+  res.json({ success: true, ...result });
+});
+
+app.post('/api/items', (req, res) => {
+  if (!req.body?.title || !req.body?.sourceFact || !req.body?.studyInterpretation) {
+    return res
+      .status(400)
+      .json({ error: 'title, sourceFact, and studyInterpretation are required' });
+  }
+  const item = createManualItem(req.body);
+  res.status(201).json({ success: true, item });
+});
+
 app.post('/api/items/:id/approve', (req, res) => {
   const item = approveItemById(req.params.id);
   if (!item) return res.status(404).json({ error: 'Item not found' });
@@ -50,6 +68,12 @@ app.post('/api/items/:id/approve', (req, res) => {
 
 app.post('/api/items/:id/discard', (req, res) => {
   const item = discardItemById(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Item not found' });
+  res.json({ success: true, item });
+});
+
+app.post('/api/items/:id/restore', (req, res) => {
+  const item = restoreItemToQueueById(req.params.id);
   if (!item) return res.status(404).json({ error: 'Item not found' });
   res.json({ success: true, item });
 });
@@ -80,6 +104,15 @@ app.post('/api/upload', (req, res) => {
   }
   const data = ingestTextDocument(req.body);
   res.json({ success: true, ...data });
+});
+
+app.post('/api/sessions', (req, res) => {
+  const payload = req.body as StudySessionLog;
+  if (!payload || !payload.id) {
+    return res.status(400).json({ error: 'Session log payload required' });
+  }
+  const session = recordSessionLog(payload);
+  res.json({ success: true, session });
 });
 
 app.post('/api/auth/unlock', (req, res) => {

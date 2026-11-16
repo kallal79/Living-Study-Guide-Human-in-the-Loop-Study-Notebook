@@ -1,13 +1,17 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { NotebookState, StudyItem } from '../src/types';
+import { NotebookState, StudyItem, StudySessionLog } from '../src/types';
 import {
   readState,
   saveState,
+  createManualItem,
   approveItemById,
   discardItemById,
+  restoreItemToQueueById,
   updateItemById,
   mergeItemsById,
   ingestTextDocument,
+  generateQuizFromState,
+  recordSessionLog,
 } from './notebookService';
 
 export { readState, saveState };
@@ -81,6 +85,29 @@ export function handleApiRequest(req: IncomingMessage, res: ServerResponse): boo
     return true;
   }
 
+  // POST /api/quiz/generate
+  if (pathname === '/api/quiz/generate' && method === 'POST') {
+    getBody().then((payload) => {
+      const result = generateQuizFromState(payload || {});
+      sendJson(200, { success: true, ...result });
+    });
+    return true;
+  }
+
+  // POST /api/items (manual single card creation into Review Queue)
+  if (pathname === '/api/items' && method === 'POST') {
+    getBody().then((payload) => {
+      if (!payload?.title || !payload?.sourceFact || !payload?.studyInterpretation) {
+        return sendJson(400, {
+          error: 'title, sourceFact, and studyInterpretation are required',
+        });
+      }
+      const item = createManualItem(payload);
+      sendJson(201, { success: true, item });
+    });
+    return true;
+  }
+
   // POST /api/items/:id/approve
   const approveMatch = pathname.match(/^\/api\/items\/([^/]+)\/approve$/);
   if (approveMatch && method === 'POST') {
@@ -95,6 +122,15 @@ export function handleApiRequest(req: IncomingMessage, res: ServerResponse): boo
   if (discardMatch && method === 'POST') {
     const id = decodeURIComponent(discardMatch[1]);
     const item = discardItemById(id);
+    if (!item) return sendJson(404, { error: 'Item not found' });
+    return sendJson(200, { success: true, item });
+  }
+
+  // POST /api/items/:id/restore
+  const restoreMatch = pathname.match(/^\/api\/items\/([^/]+)\/restore$/);
+  if (restoreMatch && method === 'POST') {
+    const id = decodeURIComponent(restoreMatch[1]);
+    const item = restoreItemToQueueById(id);
     if (!item) return sendJson(404, { error: 'Item not found' });
     return sendJson(200, { success: true, item });
   }
@@ -137,6 +173,18 @@ export function handleApiRequest(req: IncomingMessage, res: ServerResponse): boo
       }
       const resData = ingestTextDocument(payload);
       sendJson(200, { success: true, ...resData });
+    });
+    return true;
+  }
+
+  // POST /api/sessions
+  if (pathname === '/api/sessions' && method === 'POST') {
+    getBody().then((payload: StudySessionLog) => {
+      if (!payload || !payload.id) {
+        return sendJson(400, { error: 'Session log payload required' });
+      }
+      const saved = recordSessionLog(payload);
+      sendJson(200, { success: true, session: saved });
     });
     return true;
   }

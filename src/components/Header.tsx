@@ -8,6 +8,7 @@ interface HeaderProps {
   onLockNotebook: () => void;
   onExportBackup: () => void;
   onOpenMobileNav?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,10 +16,12 @@ export const Header: React.FC<HeaderProps> = ({
   onLockNotebook,
   onExportBackup,
   onOpenMobileNav,
+  onOpenSettings,
 }) => {
   const [ambientActive, setAmbientActive] = useState(false);
   const [ambientPreset, setAmbientPreset] = useState<'rain' | 'zen' | 'library'>('rain');
   const [showAmbientMenu, setShowAmbientMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -181,11 +184,56 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* User Avatar Circle 'B' as in screenshot 3 */}
-        <div
-          className="w-8 h-8 rounded-full bg-[#EADCC8] text-[#7A3F05] flex items-center justify-center font-serif font-bold text-sm border border-[#DAC9AF] shadow-sm cursor-pointer select-none"
-          title="Private Notebook Owner"
-        >
-          B
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowProfileMenu((prev) => !prev)}
+            className="w-8 h-8 rounded-full bg-[#EADCC8] text-[#7A3F05] flex items-center justify-center font-serif font-bold text-sm border border-[#DAC9AF] shadow-sm cursor-pointer select-none hover:ring-2 hover:ring-[#D5C9B4] transition-all"
+            title="Private Notebook Owner"
+          >
+            B
+          </button>
+
+          {showProfileMenu && (
+            <div className="absolute right-0 mt-2 w-52 bg-[#FAF7F0] border border-[#DDD5C7] rounded-xl shadow-lg p-2 z-30 animate-fade-in text-xs space-y-1">
+              <div className="px-2.5 py-1.5 border-b border-[#EAE4D7] mb-1">
+                <div className="font-semibold text-[#1A1815]">Private Owner</div>
+                <div className="text-[10px] text-[#7A7264] truncate">{state.notebookName}</div>
+              </div>
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    onOpenSettings();
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#EFEAE0] text-[#5A5348]"
+                >
+                  Notebook Settings
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  onExportBackup();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#EFEAE0] text-[#5A5348]"
+              >
+                Download Full Backup
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  onLockNotebook();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#FCE8E8] text-[#8C2C2C] font-medium"
+              >
+                Sign Out / Lock Notebook
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

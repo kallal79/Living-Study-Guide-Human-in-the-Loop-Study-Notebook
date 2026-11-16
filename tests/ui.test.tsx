@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { App } from '../src/App';
 import { initialNotebookState } from '../src/data/initialData';
+import { generateDynamicQuiz } from '../src/utils/quizGenerator';
 
 // Mock canvas-confetti so JSDOM doesn't warn on canvas 2D context
 vi.mock('canvas-confetti', () => ({
@@ -35,7 +36,10 @@ function createMemoryStorage(): Storage {
 }
 
 describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
+  let quizGenerateCalls = 0;
+
   beforeEach(() => {
+    quizGenerateCalls = 0;
     const ls = createMemoryStorage();
     const ss = createMemoryStorage();
     Object.defineProperty(globalThis, 'localStorage', { value: ls, configurable: true, writable: true });
@@ -43,7 +47,7 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     Object.defineProperty(window, 'localStorage', { value: ls, configurable: true, writable: true });
     Object.defineProperty(window, 'sessionStorage', { value: ss, configurable: true, writable: true });
 
-    // Mock fetch to simulate healthy local API returning initial seed
+    // Mock fetch simulating local API including POST /api/quiz/generate
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/api/notebook') && (!init?.method || init.method === 'GET')) {
@@ -51,6 +55,22 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
+      }
+      if (url.includes('/api/quiz/generate') && init?.method === 'POST') {
+        quizGenerateCalls++;
+        const payload = init.body ? JSON.parse(String(init.body)) : {};
+        const questions = generateDynamicQuiz(payload.items || initialNotebookState.items, payload);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            questions,
+            generatedAt: new Date().toISOString(),
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
       }
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
@@ -88,7 +108,7 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText('Recall Practice')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /^Quick quiz$/i }));
-    expect(screen.getByText('Source-Grounded Quick Quiz')).toBeTruthy();
+    expect(await screen.findByText('Source-Grounded Quick Quiz')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /^Study session$/i }));
     expect(screen.getByText('Focused Study Session')).toBeTruthy();
@@ -98,7 +118,7 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText('SOURCE-LINKED COVERAGE')).toBeTruthy();
   });
 
-  it('approves a card from Review Queue, updates Library count, and allows sending back', async () => {
+  it('approves a card from Review Queue, updates Library count, and supports Undo + send back', async () => {
     render(<App />);
     await screen.findByText('Explain inequality from the source.');
 
@@ -108,7 +128,6 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     const approveButtons = screen.getAllByRole('button', { name: /Approve/i });
     fireEvent.click(approveButtons[0]);
 
-    // Undo toast appears and card leaves queue
     expect(screen.getByText(/to Library\./i)).toBeTruthy();
     expect(screen.queryByText('The self is social')).toBeNull();
 
@@ -119,11 +138,9 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     // Approve again and check Library
     fireEvent.click(screen.getAllByRole('button', { name: /Approve/i })[0]);
 
-    // Library now has 9 approved items
     fireEvent.click(screen.getByRole('button', { name: /^Library$/i }));
     expect(screen.getByText(/Approved Knowledge Library \(9\)/i)).toBeTruthy();
 
-    // Send card back to Review Queue
     const sendBackButtons = screen.getAllByTitle('Send back to Review Queue');
     fireEvent.click(sendBackButtons[0]);
     expect(screen.getByText(/Approved Knowledge Library \(8\)/i)).toBeTruthy();
@@ -144,7 +161,7 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText('Card 2 of 8 • Strictly verified from your notes')).toBeTruthy();
   });
 
-  it('opens and closes EditModal, DocumentUploader, SettingsModal, and MissionFlowModal without hook errors', async () => {
+  it('creates both extracted and manual single cards into Review Queue and opens/closes all modals', async () => {
     render(<App />);
     await screen.findByText('Explain inequality from the source.');
 
@@ -153,16 +170,32 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText('Nothing Saves Without A Check')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Got it, take me to Review Queue/i }));
 
-    // EditModal inside ReviewQueue
+    // EditModal
     fireEvent.click(screen.getByRole('button', { name: /Review queue/i }));
-    const editButtons = screen.getAllByRole('button', { name: /^Edit/i });
-    fireEvent.click(editButtons[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Edit/i })[0]);
     expect(screen.getByText('Edit Study Candidate')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
 
-    // DocumentUploader with Incident Runbook preset
+    // Manual single card creation inside DocumentUploader
     fireEvent.click(screen.getByRole('button', { name: /Ingest Source Notes/i }));
-    expect(screen.getByText('Ingest Source Notes', { selector: 'h3' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Create Single Study Card/i }));
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. Kill Switch/i), {
+      target: { value: 'Circuit Breaker' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. Incident Prep/i), {
+      target: { value: 'Reliability' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Paste the exact sentence/i), {
+      target: { value: 'Circuit breakers trip automatically when downstream error rates exceed threshold.' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Write the clean takeaway/i), {
+      target: { value: 'Automatically halts failing downstream calls when error thresholds trigger.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Add Card to Review Queue/i }));
+    expect(screen.getByText('Circuit Breaker')).toBeTruthy();
+
+    // DocumentUploader Bulk Extract with Incident Runbook preset
+    fireEvent.click(screen.getByRole('button', { name: /Ingest Source Notes/i }));
     fireEvent.click(screen.getByRole('button', { name: /Incident Runbook/i }));
     expect(screen.getByText(/Live Preview: 5 candidates detected/i)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Extract \(5\) to Review Queue/i }));
@@ -176,24 +209,35 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText(/Quiet Study Notebook — AWS Module 1/i)).toBeTruthy();
   });
 
-  it('computes QuickQuiz final score accurately without double-counting the final question', async () => {
+  it('fetches dynamic varied quiz questions via /api/quiz/generate and generates different questions per attempt', async () => {
     render(<App />);
     await screen.findByText('Explain inequality from the source.');
 
     fireEvent.click(screen.getByRole('button', { name: /^Quick quiz$/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Quick 5' }));
+    await waitFor(() => {
+      expect(quizGenerateCalls).toBeGreaterThanOrEqual(1);
+    });
+    expect(screen.getByText(/Fresh via \/api\/quiz\/generate/i)).toBeTruthy();
 
-    // Answer first 5 approved items by selecting the exact correct option text
-    const firstFiveApproved = initialNotebookState.items
-      .filter((i) => i.status === 'approved')
-      .slice(0, 5);
-    for (let q = 0; q < firstFiveApproved.length; q++) {
-      const item = firstFiveApproved[q];
-      const correctOptionText =
-        item.quizQuestion.options[item.quizQuestion.correctOptionIndex];
-      const optionButton = screen.getByText(correctOptionText).closest('button');
-      expect(optionButton).toBeTruthy();
-      fireEvent.click(optionButton!);
+    // Switch to Core MCQ + Quick 5 so we can answer accurately and complete the attempt
+    fireEvent.click(screen.getByRole('button', { name: 'Core MCQ' }));
+    await waitFor(() => expect(quizGenerateCalls).toBeGreaterThanOrEqual(2));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quick 5' }));
+    await waitFor(() => expect(quizGenerateCalls).toBeGreaterThanOrEqual(3));
+
+    const approvedItems = initialNotebookState.items.filter((i) => i.status === 'approved');
+
+    for (let q = 0; q < 5; q++) {
+      // Find the matching approved item by its question prompt and select its exact correct option
+      const heading = screen.getByRole('heading', { level: 3 }).textContent || '';
+      const matched = approvedItems.find((it) => it.quizQuestion.question === heading);
+      expect(matched).toBeTruthy();
+      const correctText =
+        matched!.quizQuestion.options[matched!.quizQuestion.correctOptionIndex];
+      const optionBtn = screen.getByText(correctText).closest('button');
+      expect(optionBtn).toBeTruthy();
+      fireEvent.click(optionBtn!);
 
       const nextOrFinish = screen.getByRole('button', {
         name: q < 4 ? /Next Question/i : /Finish Quiz/i,
@@ -204,6 +248,27 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText('Quiz Completed!')).toBeTruthy();
     expect(screen.getByText('100%')).toBeTruthy();
     expect(screen.getByText(/You answered 5 of 5 questions correctly/i)).toBeTruthy();
+
+    // Click "Generate Different Quiz" and verify /api/quiz/generate is invoked again & Attempt increments
+    const callsBefore = quizGenerateCalls;
+    fireEvent.click(screen.getByRole('button', { name: /Generate Different Quiz/i }));
+    await waitFor(() => {
+      expect(quizGenerateCalls).toBeGreaterThan(callsBefore);
+    });
+    expect(screen.getByText(/Attempt #4/i)).toBeTruthy();
+  });
+
+  it('supports switching to Fill-in-Blank (Cloze) style quiz directly via API', async () => {
+    render(<App />);
+    await screen.findByText('Explain inequality from the source.');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Quick quiz$/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fill-in-Blank' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('SOURCE CLOZE')).toBeTruthy();
+    });
+    expect(screen.getByText('[ ? ]')).toBeTruthy();
   });
 
   it('protects content behind PrivateLockScreen and unlocks with valid passcode', async () => {
@@ -212,7 +277,6 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Private Lock/i }));
 
-    // Content is hidden behind lock screen
     expect(screen.queryByText('Explain inequality from the source.')).toBeNull();
     expect(screen.getByText('Private Study Guide')).toBeTruthy();
 

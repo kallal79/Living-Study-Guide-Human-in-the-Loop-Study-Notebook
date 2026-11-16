@@ -353,7 +353,7 @@
       "title": "Institutional inequality constrains agency",
       "sourceFact": "Inequality is structured into institutions; individual agency operates within systemic constraints.",
       "studyInterpretation": "Personal choices are shaped and bounded by established institutional hierarchies.",
-      "status": "pending",
+      "status": "approved",
       "userEdited": false,
       "originalInterpretation": "Personal choices are shaped and bounded by established institutional hierarchies.",
       "createdAt": "2026-10-14T09:12:00.000Z",
@@ -374,7 +374,8 @@
         ],
         "correctOptionIndex": 1,
         "explanation": "Source Fact: Inequality is structured into institutions; individual agency operates within systemic constraints."
-      }
+      },
+      "reviewedAt": "2026-11-16T04:09:30.531Z"
     },
     {
       "id": "soc-pen-4",
@@ -386,7 +387,7 @@
       "title": "Cultural Capital and Habitus",
       "sourceFact": "Bourdieu defined cultural capital as non-financial social assets—such as education, style of speech, and mannerisms—that promote social mobility.",
       "studyInterpretation": "Social advantage is reproduced through non-monetary competencies, cultural tastes, and demeanor.",
-      "status": "pending",
+      "status": "approved",
       "userEdited": false,
       "originalInterpretation": "Social advantage is reproduced through non-monetary competencies, cultural tastes, and demeanor.",
       "createdAt": "2026-10-14T09:12:00.000Z",
@@ -407,7 +408,8 @@
         ],
         "correctOptionIndex": 1,
         "explanation": "Source Fact: Bourdieu defined cultural capital as non-financial social assets—such as education, style of speech, and mannerisms."
-      }
+      },
+      "reviewedAt": "2026-11-16T04:09:49.669Z"
     },
     {
       "id": "soc-pen-5",
@@ -584,7 +586,7 @@
       "title": "The I and the Me",
       "sourceFact": "Mead separated the self into two parts: the 'I' (the spontaneous, creative, unsocialized response) and the 'Me' (the socialized self formed by internalized societal attitudes).",
       "studyInterpretation": "The self balances spontaneous individual impulses ('I') against learned societal expectations ('Me').",
-      "status": "pending",
+      "status": "approved",
       "userEdited": false,
       "originalInterpretation": "The self balances spontaneous individual impulses ('I') against learned societal expectations ('Me').",
       "createdAt": "2026-10-14T09:12:00.000Z",
@@ -605,7 +607,8 @@
         ],
         "correctOptionIndex": 1,
         "explanation": "Source Fact: Mead separated the self into two parts: the 'I' (the spontaneous, creative response) and the 'Me' (the socialized self)."
-      }
+      },
+      "reviewedAt": "2026-11-16T04:09:51.815Z"
     },
     {
       "id": "soc-pen-11",
@@ -683,7 +686,7 @@
       "title": "Is Meritocracy Measurable or Ideological?",
       "sourceFact": "Sociologists debate whether pure meritocracy exists in modern market economies or functions primarily as a legitimizing ideology that justifies inequality.",
       "studyInterpretation": "Examines whether meritocracy is an empirical reality or a social myth legitimizing class disparities.",
-      "status": "pending",
+      "status": "approved",
       "userEdited": false,
       "originalInterpretation": "Examines whether meritocracy is an empirical reality or a social myth legitimizing class disparities.",
       "createdAt": "2026-10-14T09:12:00.000Z",
@@ -704,7 +707,8 @@
         ],
         "correctOptionIndex": 1,
         "explanation": "Source Fact: Sociologists debate whether pure meritocracy exists or functions primarily as a legitimizing ideology that justifies inequality."
-      }
+      },
+      "reviewedAt": "2026-11-16T04:09:44.135Z"
     }
   ],
   "documents": [
@@ -720,6 +724,15 @@
     }
   ],
   "sessions": [
+    {
+      "id": "quiz-session-mwiqyknb",
+      "date": "2026-11-16T04:11:59.111Z",
+      "durationMinutes": 5,
+      "itemsReviewed": 12,
+      "quizScore": 11,
+      "quizTotal": 12,
+      "notes": "Quick quiz completed with score 11/12."
+    },
     {
       "id": "session-1",
       "date": "2026-10-14T11:00:00.000Z",
