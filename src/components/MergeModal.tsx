@@ -9,13 +9,16 @@ interface MergeModalProps {
   onMerge: (mergedTitle: string, mergedInterpretation: string) => void;
 }
 
-export const MergeModal: React.FC<MergeModalProps> = ({
+export const MergeModal: React.FC<MergeModalProps> = (props) => {
+  if (!props.isOpen || props.selectedItems.length < 2) return null;
+  return <MergeModalInner key={props.selectedItems.map((i) => i.id).join('|')} {...props} />;
+};
+
+const MergeModalInner: React.FC<MergeModalProps> = ({
   selectedItems,
-  isOpen,
   onClose,
   onMerge,
 }) => {
-  if (!isOpen || selectedItems.length < 2) return null;
 
   const defaultTitle = `${selectedItems[0].title} & ${selectedItems[1].title}`;
   const defaultInterpretation = selectedItems.map((i) => i.studyInterpretation).join(' Furthermore, ');
@@ -29,7 +32,7 @@ export const MergeModal: React.FC<MergeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative">
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-5">
           <div className="flex items-center gap-2">
@@ -108,7 +111,7 @@ export const MergeModal: React.FC<MergeModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Create Merged Candidate</span>

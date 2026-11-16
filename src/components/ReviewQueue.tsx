@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, GitMerge, Check, Trash2, Filter, Keyboard, HelpCircle, Layers, Tag } from 'lucide-react';
-import { StudyItem, ItemCategory } from '../types';
+import {
+  CheckSquare,
+  GitMerge,
+  Check,
+  Trash2,
+  Keyboard,
+  HelpCircle,
+  Tag,
+  RotateCcw,
+} from 'lucide-react';
+import { StudyItem } from '../types';
 import { ReviewCard } from './ReviewCard';
 import { EditModal } from './EditModal';
 import { MergeModal } from './MergeModal';
@@ -11,6 +20,7 @@ interface ReviewQueueProps {
   items: StudyItem[];
   onApproveItem: (id: string) => void;
   onDiscardItem: (id: string) => void;
+  onRestoreToQueue?: (id: string) => void;
   onUpdateItem: (updated: StudyItem, approveImmediately?: boolean) => void;
   onMergeItems: (itemIds: string[], mergedTitle: string, mergedInterpretation: string) => void;
   onOpenUploader: () => void;
@@ -21,6 +31,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   items,
   onApproveItem,
   onDiscardItem,
+  onRestoreToQueue,
   onUpdateItem,
   onMergeItems,
   onOpenUploader,
@@ -31,9 +42,15 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeHintActive, setMergeHintActive] = useState(false);
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [lastAction, setLastAction] = useState<{
+    id: string;
+    title: string;
+    action: 'approved' | 'discarded';
+  } | null>(null);
 
   // Extract unique tags and categories from pending items
   const tags = ['All', ...Array.from(new Set(pendingItems.map((i) => i.tag)))];
@@ -48,8 +65,11 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
     'QUESTION',
   ];
 
+  // Ensure selectedTag stays valid if all items of a tag are reviewed
+  const activeTag = tags.includes(selectedTag) ? selectedTag : 'All';
+
   const filteredItems = pendingItems.filter((item) => {
-    const matchesTag = selectedTag === 'All' || item.tag === selectedTag;
+    const matchesTag = activeTag === 'All' || item.tag === activeTag;
     const matchesCat = selectedCategory === 'All' || item.category === selectedCategory;
     return matchesTag && matchesCat;
   });
@@ -69,6 +89,9 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         setShowShortcutsModal((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setShowShortcutsModal(false);
+        setMergeHintActive(false);
       } else if ((e.key === 'a' || e.key === 'A') && filteredItems.length > 0) {
         e.preventDefault();
         handleApprove(filteredItems[0].id);
@@ -109,8 +132,12 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   };
 
   const handleApprove = (id: string) => {
+    const target = items.find((i) => i.id === id);
     playTone('approve');
     onApproveItem(id);
+    if (target) {
+      setLastAction({ id, title: target.title, action: 'approved' });
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
@@ -119,8 +146,12 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   };
 
   const handleDiscard = (id: string) => {
+    const target = items.find((i) => i.id === id);
     playTone('discard');
     onDiscardItem(id);
+    if (target) {
+      setLastAction({ id, title: target.title, action: 'discarded' });
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
@@ -128,21 +159,38 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
     });
   };
 
+  const handleUndo = () => {
+    if (!lastAction || !onRestoreToQueue) return;
+    onRestoreToQueue(lastAction.id);
+    setLastAction(null);
+  };
+
   const handleBulkApprove = () => {
     confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
     selectedIds.forEach((id) => onApproveItem(id));
     setSelectedIds(new Set());
+    setMergeHintActive(false);
   };
 
   const handleBulkDiscard = () => {
     selectedIds.forEach((id) => onDiscardItem(id));
     setSelectedIds(new Set());
+    setMergeHintActive(false);
+  };
+
+  const handleMergeButtonClick = () => {
+    if (selectedIds.size >= 2) {
+      setMergeHintActive(false);
+      setIsMergeModalOpen(true);
+    } else {
+      setMergeHintActive((prev) => !prev);
+    }
   };
 
   const selectedItemsForMerge = pendingItems.filter((i) => selectedIds.has(i.id));
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-6">
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
       {/* Top Header matching Screenshot 5 & Image 1 */}
       <div className="space-y-3 mb-6 pb-4 border-b border-[#E8E2D5]">
         {/* Row 1: Topic Tag Chips & Action */}
@@ -154,11 +202,12 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             </div>
             {tags.map((tag) => (
               <button
+                type="button"
                 key={tag}
                 onClick={() => setSelectedTag(tag)}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                  selectedTag === tag
-                    ? 'bg-[#1A1815] text-[#FAF7F0] shadow-xs'
+                  activeTag === tag
+                    ? 'bg-[#1A1815] text-[#FAF7F0] shadow-sm'
                     : 'bg-[#EDE7DA] text-[#6B6355] hover:bg-[#E2DAC9]'
                 }`}
               >
@@ -174,44 +223,41 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             </span>
 
             <button
-              onClick={() => {
-                if (selectedIds.size < 2) {
-                  const firstTwo = filteredItems.slice(0, 2).map((i) => i.id);
-                  setSelectedIds(new Set(firstTwo));
-                }
-                setIsMergeModalOpen(true);
-              }}
-              disabled={filteredItems.length < 2}
+              type="button"
+              onClick={handleMergeButtonClick}
+              disabled={filteredItems.length < 2 && selectedIds.size < 2}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
-                filteredItems.length < 2
+                filteredItems.length < 2 && selectedIds.size < 2
                   ? 'opacity-40 cursor-not-allowed bg-[#E8E2D5] text-[#8C8477]'
                   : 'bg-[#EAE3D2] text-[#784004] hover:bg-[#E2D8C3] border border-[#D5C9B4]'
               }`}
             >
               <GitMerge className="w-3.5 h-3.5" />
-              <span>SELECT TO MERGE</span>
+              <span>{selectedIds.size >= 2 ? `MERGE (${selectedIds.size})` : 'SELECT TO MERGE'}</span>
             </button>
           </div>
         </div>
 
-        {/* Row 2: Category Filter Pills matching Image 1 (All, Concept, Term, System, Process, How-To, Question) */}
+        {/* Row 2: Category Filter Pills matching Image 1 */}
         <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
           <span className="text-[#8C8477] font-semibold uppercase tracking-wider mr-1">Type:</span>
           {categories.map((cat) => {
-            const count = cat === 'All' 
-              ? pendingItems.length 
-              : pendingItems.filter((i) => i.category === cat).length;
+            const count =
+              cat === 'All'
+                ? pendingItems.length
+                : pendingItems.filter((i) => i.category === cat).length;
 
             if (cat !== 'All' && count === 0) return null;
 
             return (
               <button
+                type="button"
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-2.5 py-0.5 rounded-lg font-medium transition-all ${
                   selectedCategory === cat
-                    ? 'bg-[#784004] text-white shadow-2xs font-semibold'
-                    : 'bg-[#F2ECE0] text-[#5A5348] hover:bg-[#E8DFCFC0]'
+                    ? 'bg-[#784004] text-white shadow-sm font-semibold'
+                    : 'bg-[#F2ECE0] text-[#5A5348] hover:bg-[#E8DFCF]/80'
                 }`}
               >
                 {cat === 'All' ? `All (${count})` : `${cat} (${count})`}
@@ -220,6 +266,55 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
           })}
         </div>
       </div>
+
+      {/* Undo Toast Banner */}
+      {lastAction && onRestoreToQueue && (
+        <div className="mb-4 px-4 py-2.5 bg-[#1A1815] text-[#FAF7F0] rounded-xl flex items-center justify-between text-xs shadow-md animate-fade-in">
+          <span>
+            {lastAction.action === 'approved' ? 'Approved' : 'Discarded'}{' '}
+            <strong>&ldquo;{lastAction.title}&rdquo;</strong>
+            {lastAction.action === 'approved' ? ' to Library.' : '.'}
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleUndo}
+              className="flex items-center gap-1 text-[#FCD34D] hover:underline font-semibold"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Undo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLastAction(null)}
+              className="text-[#928B7E] hover:text-white"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Merge Guidance Banner when user clicks Select to Merge with < 2 selected */}
+      {mergeHintActive && selectedIds.size < 2 && filteredItems.length >= 2 && (
+        <div className="mb-4 px-4 py-3 bg-[#FAF4EA] border border-[#ECDDC8] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#784004] animate-fade-in">
+          <span>
+            Check the boxes on any <strong>2 or more cards</strong> below to combine them into a single concept card.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              const firstTwo = filteredItems.slice(0, 2).map((i) => i.id);
+              setSelectedIds(new Set(firstTwo));
+              setMergeHintActive(false);
+              setIsMergeModalOpen(true);
+            }}
+            className="px-3 py-1 bg-[#784004] text-white rounded-lg font-semibold shrink-0 hover:bg-[#5F3203]"
+          >
+            Quick-merge top 2
+          </button>
+        </div>
+      )}
 
       {/* Keyboard Shortcuts Hint Bar */}
       <div className="mb-6 flex items-center justify-between text-[11px] text-[#7A7264] bg-[#F7F4EC] px-3.5 py-1.5 rounded-xl border border-[#E8E2D5]">
@@ -234,6 +329,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
           <span><kbd className="px-1.5 py-0.5 bg-[#EAE3D2] rounded text-[#2C2824] font-mono text-[10px]">M</kbd> Merge</span>
         </div>
         <button
+          type="button"
           onClick={() => setShowShortcutsModal(true)}
           className="text-[#8C5209] hover:underline flex items-center gap-1 shrink-0"
         >
@@ -244,7 +340,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
       {/* Floating Bulk Action Bar when items selected */}
       {selectedIds.size > 0 && (
-        <div className="mb-6 p-3.5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-xl flex items-center justify-between gap-4 shadow-sm animate-fade-in">
+        <div className="mb-6 p-3.5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-xl flex flex-wrap items-center justify-between gap-4 shadow-sm animate-fade-in">
           <div className="flex items-center gap-2 text-xs font-medium text-[#5A5348]">
             <input
               type="checkbox"
@@ -257,9 +353,10 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {selectedIds.size >= 2 && (
               <button
+                type="button"
                 onClick={() => setIsMergeModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#EAE3D2] hover:bg-[#E2D8C3] text-[#784004] border border-[#D5C9B4] rounded-lg text-xs font-semibold transition-colors"
               >
@@ -269,14 +366,16 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             )}
 
             <button
+              type="button"
               onClick={handleBulkApprove}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Approve All ({selectedIds.size})</span>
             </button>
 
             <button
+              type="button"
               onClick={handleBulkDiscard}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-[#FCE8E8] text-[#8C2C2C] border border-[#E8B4B4] rounded-lg text-xs font-medium transition-colors"
             >
@@ -303,8 +402,26 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             />
           ))}
         </div>
+      ) : pendingItems.length > 0 ? (
+        /* Filtered Empty State */
+        <div className="p-10 text-center bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl">
+          <p className="text-sm text-[#7A7264] mb-4">
+            No pending cards match your current tag/category filter. There are still{' '}
+            <strong>{pendingItems.length}</strong> items in other categories.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedTag('All');
+              setSelectedCategory('All');
+            }}
+            className="px-4 py-2 bg-[#1A1815] text-white text-xs font-semibold rounded-lg"
+          >
+            Reset Filters
+          </button>
+        </div>
       ) : (
-        /* Empty State */
+        /* All Queue Clear State */
         <div className="p-12 text-center bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl">
           <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#E7F0E9] text-[#2B5738] flex items-center justify-center">
             <CheckSquare className="w-6 h-6" />
@@ -317,12 +434,14 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
           </p>
           <div className="flex justify-center gap-3">
             <button
+              type="button"
               onClick={() => setActiveTab('library')}
               className="px-4 py-2 bg-[#2B5738] text-white text-xs font-semibold rounded-lg hover:bg-[#22452D] transition-colors"
             >
               Open Library
             </button>
             <button
+              type="button"
               onClick={onOpenUploader}
               className="px-4 py-2 bg-[#EAE3D2] text-[#2C2824] text-xs font-semibold rounded-lg hover:bg-[#E2D8C3] transition-colors"
             >
@@ -362,7 +481,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcutsModal && (
-        <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5] mb-4">
               <h3 className="text-base font-serif font-bold text-[#1A1815] flex items-center gap-2">
@@ -370,6 +489,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
                 Keyboard Shortcuts Guide
               </h3>
               <button
+                type="button"
                 onClick={() => setShowShortcutsModal(false)}
                 className="text-xs text-[#7A7264] hover:text-[#1A1815]"
               >
@@ -395,7 +515,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
                 <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">M</kbd>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-[#EAE4D7]">
-                <span>Flip flashcard / Next</span>
+                <span>Flip flashcard</span>
                 <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">Space</kbd>
               </div>
               <div className="flex justify-between items-center py-1">
@@ -406,6 +526,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
             <div className="mt-5 pt-3 border-t border-[#E8E2D5] text-right">
               <button
+                type="button"
                 onClick={() => setShowShortcutsModal(false)}
                 className="px-4 py-1.5 bg-[#2B5738] text-white rounded-lg text-xs font-semibold"
               >

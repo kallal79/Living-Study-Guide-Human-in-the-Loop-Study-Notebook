@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  BookOpen, 
-  CheckSquare, 
-  Library as LibraryIcon, 
-  Layers, 
-  HelpCircle, 
-  Clock, 
-  BarChart3, 
-  Settings, 
+import {
+  BookOpen,
+  CheckSquare,
+  Library as LibraryIcon,
+  Layers,
+  HelpCircle,
+  Clock,
+  BarChart3,
+  Settings,
   UploadCloud,
   ChevronRight,
   BookMarked,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  X,
 } from 'lucide-react';
 import { NotebookState } from '../types';
 
@@ -24,6 +25,8 @@ interface SidebarProps {
   onOpenUploader: () => void;
   onOpenMissionFlow: () => void;
   onSwitchNotebookPreset: (preset: 'sociology' | 'aws') => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,24 +37,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUploader,
   onOpenMissionFlow,
   onSwitchNotebookPreset,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
   const [showPresetDropdown, setShowPresetDropdown] = useState(false);
 
   const pendingCount = state.items.filter((i) => i.status === 'pending').length;
   const approvedCount = state.items.filter((i) => i.status === 'approved').length;
   const totalRelevant = pendingCount + approvedCount;
-  const completionPercentage = totalRelevant > 0 
-    ? Math.round((approvedCount / totalRelevant) * 100) 
-    : 0;
+  const completionPercentage =
+    totalRelevant > 0 ? Math.round((approvedCount / totalRelevant) * 100) : 0;
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: BookOpen },
-    { 
-      id: 'review', 
-      label: 'Review queue', 
-      icon: CheckSquare, 
+    {
+      id: 'review',
+      label: 'Review queue',
+      icon: CheckSquare,
       badge: pendingCount > 0 ? pendingCount : null,
-      highlight: pendingCount > 0
+      highlight: pendingCount > 0,
     },
     { id: 'library', label: 'Library', icon: LibraryIcon },
     { id: 'flashcards', label: 'Flashcards', icon: Layers },
@@ -62,28 +66,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isAws = state.notebookName.includes('AWS');
 
-  return (
-    <aside className="w-64 bg-[#F5F2EB] border-r border-[#E5DFD3] flex flex-col justify-between h-screen sticky top-0 select-none text-[#2C2824]">
+  const handleNavClick = (id: string) => {
+    setActiveTab(id);
+    onCloseMobile?.();
+  };
+
+  const sidebarContent = (
+    <div className="w-64 bg-[#F5F2EB] border-r border-[#E5DFD3] flex flex-col justify-between h-full select-none text-[#2C2824]">
       {/* Top Section */}
       <div className="p-5 flex flex-col flex-1 overflow-y-auto">
         {/* Notebook Title Badge & Preset Switcher */}
         <div className="mb-6 relative">
           <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#EAE3D2] text-[#8C5209]">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="p-1.5 rounded-lg bg-[#EAE3D2] text-[#8C5209] shrink-0">
                 <BookMarked className="w-4 h-4" />
               </span>
-              <span className="text-[11px] font-bold tracking-widest text-[#7C7265] uppercase">
+              <span className="text-[11px] font-bold tracking-widest text-[#7C7265] uppercase truncate">
                 {state.activeTopic || 'YOUR NOTEBOOK'}
               </span>
             </div>
-            <button
-              onClick={() => setShowPresetDropdown(!showPresetDropdown)}
-              className="text-[#7C7265] hover:text-[#1A1815] p-1 rounded transition-colors"
-              title="Switch demo course notebook"
-            >
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowPresetDropdown(!showPresetDropdown)}
+                className="text-[#7C7265] hover:text-[#1A1815] p-1 rounded transition-colors"
+                title="Switch demo course notebook"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {onCloseMobile && (
+                <button
+                  type="button"
+                  onClick={onCloseMobile}
+                  aria-label="Close navigation menu"
+                  className="md:hidden text-[#7C7265] hover:text-[#1A1815] p-1 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           <h2
@@ -101,9 +123,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Switch Demo Material
               </div>
               <button
+                type="button"
                 onClick={() => {
                   onSwitchNotebookPreset('sociology');
                   setShowPresetDropdown(false);
+                  onCloseMobile?.();
                 }}
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                   !isAws ? 'bg-[#EAE3D2] text-[#1A1815] font-semibold' : 'hover:bg-[#EFEAE0] text-[#5A5348]'
@@ -113,9 +137,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="text-[10px] text-[#7A7264] font-normal">Mead, Cooley, Stratification</div>
               </button>
               <button
+                type="button"
                 onClick={() => {
                   onSwitchNotebookPreset('aws');
                   setShowPresetDropdown(false);
+                  onCloseMobile?.();
                 }}
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                   isAws ? 'bg-[#EAE3D2] text-[#1A1815] font-semibold' : 'hover:bg-[#EFEAE0] text-[#5A5348]'
@@ -138,11 +164,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const isActive = activeTab === item.id;
             return (
               <button
+                type="button"
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleNavClick(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-[#EAE3D2] text-[#1A1815] shadow-xs font-semibold'
+                    ? 'bg-[#EAE3D2] text-[#1A1815] shadow-sm font-semibold'
                     : 'text-[#5C5549] hover:bg-[#EFEAE0] hover:text-[#1A1815]'
                 }`}
               >
@@ -163,18 +190,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        {/* Interactive Mission Flow Diagram Link (Image 2) */}
+        {/* Interactive Mission Flow & Ingest Buttons */}
         <div className="pt-2 border-t border-[#E5DFD3] space-y-2">
           <button
-            onClick={onOpenMissionFlow}
+            type="button"
+            onClick={() => {
+              onOpenMissionFlow();
+              onCloseMobile?.();
+            }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#2B5738] bg-[#E7F0E9] hover:bg-[#DBEADF] border border-[#BDDDC2] transition-colors"
           >
             <Sparkles className="w-4 h-4 text-[#2B5738]" />
-            <span>How This Works (Image 2)</span>
+            <span>How This Works</span>
           </button>
 
           <button
-            onClick={onOpenUploader}
+            type="button"
+            onClick={() => {
+              onOpenUploader();
+              onCloseMobile?.();
+            }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#784004] bg-[#F7EFE1] hover:bg-[#F2E5D0] border border-[#ECD9BC] transition-colors"
           >
             <UploadCloud className="w-4 h-4" />
@@ -202,13 +237,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <button
-          onClick={onOpenSettings}
+          type="button"
+          onClick={() => {
+            onOpenSettings();
+            onCloseMobile?.();
+          }}
           className="w-full flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-[#6B6355] hover:text-[#1A1815] transition-colors"
         >
           <Settings className="w-3.5 h-3.5" />
           <span>Notebook settings</span>
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sticky Sidebar */}
+      <aside className="hidden md:flex h-screen sticky top-0 shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Slide-Over Drawer */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-[#1A1815]/50 backdrop-blur-sm"
+            onClick={onCloseMobile}
+          />
+          <aside className="relative z-10 h-full shadow-2xl animate-fade-in">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

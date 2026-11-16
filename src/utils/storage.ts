@@ -3,6 +3,27 @@ import { initialNotebookState } from '../data/initialData';
 
 const LOCAL_STORAGE_KEY = 'living_study_guide_state_v1';
 
+function safeSetLocalStorage(key: string, value: string): void {
+  try {
+    if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
+      localStorage.setItem(key, value);
+    }
+  } catch {
+    // Ignore restricted storage environments (e.g., strict private iframes)
+  }
+}
+
+function safeGetLocalStorage(key: string): string | null {
+  try {
+    if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+      return localStorage.getItem(key);
+    }
+  } catch {
+    // Ignore restricted storage environments
+  }
+  return null;
+}
+
 export async function loadNotebookState(): Promise<NotebookState> {
   // Try fetching from backend API first
   try {
@@ -10,7 +31,7 @@ export async function loadNotebookState(): Promise<NotebookState> {
     if (res.ok) {
       const data = await res.json();
       if (data && data.items) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+        safeSetLocalStorage(LOCAL_STORAGE_KEY, JSON.stringify(data));
         return data;
       }
     }
@@ -20,7 +41,7 @@ export async function loadNotebookState(): Promise<NotebookState> {
 
   // Fallback to localStorage
   try {
-    const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const cached = safeGetLocalStorage(LOCAL_STORAGE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
       if (parsed && Array.isArray(parsed.items)) {
@@ -32,17 +53,13 @@ export async function loadNotebookState(): Promise<NotebookState> {
   }
 
   // Fallback to initial seed data
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialNotebookState));
-  return initialNotebookState;
+  safeSetLocalStorage(LOCAL_STORAGE_KEY, JSON.stringify(initialNotebookState));
+  return structuredClone(initialNotebookState);
 }
 
 export async function saveNotebookState(state: NotebookState): Promise<void> {
   // Always update localStorage immediately
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-  } catch (err) {
-    console.error('Failed to write to localStorage', err);
-  }
+  safeSetLocalStorage(LOCAL_STORAGE_KEY, JSON.stringify(state));
 
   // Try updating backend API
   try {

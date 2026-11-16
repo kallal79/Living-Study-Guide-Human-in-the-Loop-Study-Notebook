@@ -17,10 +17,13 @@ import { PrivateLockScreen } from './components/PrivateLockScreen';
 import { ReplitPreviewBanner } from './components/ReplitPreviewBanner';
 import { MissionFlowModal } from './components/MissionFlowModal';
 
+const SESSION_UNLOCK_KEY = 'living_study_guide_unlocked';
+
 export const App: React.FC = () => {
-  const [state, setState] = useState<NotebookState>(initialNotebookState);
+  const [state, setState] = useState<NotebookState>(() => structuredClone(initialNotebookState));
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isUnlocked, setIsUnlocked] = useState<boolean>(true);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
   const [isUploaderOpen, setIsUploaderOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isMissionFlowOpen, setIsMissionFlowOpen] = useState<boolean>(false);
@@ -28,12 +31,22 @@ export const App: React.FC = () => {
 
   // Initialize and load saved state
   useEffect(() => {
+    let active = true;
     loadNotebookState().then((loaded) => {
+      if (!active) return;
       setState(loaded);
       if (loaded.isLocked) {
-        setIsUnlocked(false);
+        const sessionOk =
+          typeof sessionStorage !== 'undefined' &&
+          sessionStorage.getItem(SESSION_UNLOCK_KEY) === '1';
+        setIsUnlocked(sessionOk);
+      } else {
+        setIsUnlocked(true);
       }
     });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Save changes to storage whenever state updates
@@ -60,6 +73,24 @@ export const App: React.FC = () => {
       ...prev,
       items: prev.items.map((i) =>
         i.id === id ? { ...i, status: 'discarded', reviewedAt: new Date().toISOString() } : i
+      ),
+    }));
+  };
+
+  const handleRestoreToQueue = (id: string) => {
+    updateState((prev) => ({
+      ...prev,
+      items: prev.items.map((i) =>
+        i.id === id ? { ...i, status: 'pending', reviewedAt: undefined } : i
+      ),
+    }));
+  };
+
+  const handleRestoreDiscarded = () => {
+    updateState((prev) => ({
+      ...prev,
+      items: prev.items.map((i) =>
+        i.status === 'discarded' ? { ...i, status: 'pending', reviewedAt: undefined } : i
       ),
     }));
   };
@@ -96,7 +127,7 @@ export const App: React.FC = () => {
     if (targets.length < 2) return;
 
     const combinedSource = targets.map((i) => i.sourceFact).join(' ');
-    const combinedCitation = targets.map((i) => i.sourceCitation).join('; ');
+    const combinedCitation = targets.map((i) => i.sourceCitation).filter(Boolean).join('; ');
 
     const mergedItem: StudyItem = {
       id: `merged-${Date.now().toString(36)}`,
@@ -125,11 +156,11 @@ export const App: React.FC = () => {
           mergedInterpretation,
           'They operate completely in opposition with zero shared effects.',
           'They only apply to hardware architecture without human involvement.',
-          'This synthesis is mathematically disproven.'
+          'This synthesis is mathematically disproven.',
         ],
         correctOptionIndex: 0,
-        explanation: `Source Citation: "${combinedSource}"`
-      }
+        explanation: `Source Citation: "${combinedSource}"`,
+      },
     };
 
     updateState((prev) => ({
@@ -168,7 +199,7 @@ export const App: React.FC = () => {
     handleRecordSession(log);
   };
 
-  const handleUpdateItemProgress = (itemId: string, leitnerBox: number) => {
+  const handleUpdateItemProgress = (itemId: string, leitnerBox: number, wasCorrect: boolean) => {
     updateState((prev) => ({
       ...prev,
       items: prev.items.map((i) =>
@@ -179,6 +210,7 @@ export const App: React.FC = () => {
                 ...i.flashcard,
                 leitnerBox,
                 reviewCount: i.flashcard.reviewCount + 1,
+                correctCount: i.flashcard.correctCount + (wasCorrect ? 1 : 0),
               },
             }
           : i
@@ -188,19 +220,29 @@ export const App: React.FC = () => {
 
   const handleSwitchNotebookPreset = (preset: 'sociology' | 'aws') => {
     if (preset === 'sociology') {
-      updateState(() => sociologyNotebookState);
+      updateState(() => structuredClone(sociologyNotebookState));
     } else {
-      updateState(() => awsNotebookState);
+      updateState(() => structuredClone(awsNotebookState));
     }
   };
 
   const handleLockNotebook = () => {
+    try {
+      sessionStorage.removeItem(SESSION_UNLOCK_KEY);
+    } catch {
+      // Ignore storage error
+    }
     updateState((prev) => ({ ...prev, isLocked: true }));
     setIsUnlocked(false);
   };
 
   const handleUnlock = (code: string) => {
-    if (code === state.passcode || code === '1234') {
+    if (code === state.passcode) {
+      try {
+        sessionStorage.setItem(SESSION_UNLOCK_KEY, '1');
+      } catch {
+        // Ignore storage error
+      }
       setIsUnlocked(true);
       return true;
     }
@@ -227,6 +269,8 @@ export const App: React.FC = () => {
           onOpenUploader={() => setIsUploaderOpen(true)}
           onOpenMissionFlow={() => setIsMissionFlowOpen(true)}
           onSwitchNotebookPreset={handleSwitchNotebookPreset}
+          isMobileOpen={isMobileNavOpen}
+          onCloseMobile={() => setIsMobileNavOpen(false)}
         />
 
         {/* Main Content Area */}
@@ -236,6 +280,7 @@ export const App: React.FC = () => {
             state={state}
             onLockNotebook={handleLockNotebook}
             onExportBackup={() => downloadBackup(state)}
+            onOpenMobileNav={() => setIsMobileNavOpen(true)}
           />
 
           {/* Dynamic Route Content */}
@@ -253,6 +298,7 @@ export const App: React.FC = () => {
                 items={state.items}
                 onApproveItem={handleApproveItem}
                 onDiscardItem={handleDiscardItem}
+                onRestoreToQueue={handleRestoreToQueue}
                 onUpdateItem={handleUpdateItem}
                 onMergeItems={handleMergeItems}
                 onOpenUploader={() => setIsUploaderOpen(true)}
@@ -266,6 +312,7 @@ export const App: React.FC = () => {
                 notebookName={state.notebookName}
                 onUpdateItem={(up) => handleUpdateItem(up)}
                 onDeleteItem={handleDeleteItem}
+                onSendBackToQueue={handleRestoreToQueue}
                 onStartQuizWithItem={(item) => {
                   setTargetItemId(item.id);
                   setActiveTab('quiz');
@@ -324,9 +371,25 @@ export const App: React.FC = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         state={state}
-        onUpdateSettings={(updates) => updateState((prev) => ({ ...prev, ...updates }))}
-        onRestoreState={(restored) => setState(restored)}
+        onUpdateSettings={(updates) => {
+          if (updates.isLocked === false) {
+            try {
+              sessionStorage.removeItem(SESSION_UNLOCK_KEY);
+            } catch {
+              // Ignore
+            }
+          } else if (updates.isLocked === true && !state.isLocked) {
+            try {
+              sessionStorage.setItem(SESSION_UNLOCK_KEY, '1');
+            } catch {
+              // Ignore
+            }
+          }
+          updateState((prev) => ({ ...prev, ...updates }));
+        }}
+        onRestoreState={(restored) => updateState(() => restored)}
         onResetToDemo={(mode) => handleSwitchNotebookPreset(mode)}
+        onRestoreDiscarded={handleRestoreDiscarded}
       />
 
       <MissionFlowModal

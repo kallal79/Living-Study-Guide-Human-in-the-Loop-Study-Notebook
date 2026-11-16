@@ -1,14 +1,17 @@
-import React from 'react';
-import { 
-  ArrowRight, 
-  CheckSquare, 
-  Library as LibraryIcon, 
-  Layers, 
-  HelpCircle, 
-  Clock, 
-  Sparkles, 
+import React, { useState } from 'react';
+import {
+  ArrowRight,
+  CheckSquare,
+  Library as LibraryIcon,
+  Layers,
+  HelpCircle,
+  Clock,
+  Sparkles,
   ShieldCheck,
-  Upload
+  Upload,
+  FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { NotebookState } from '../types';
 
@@ -23,19 +26,31 @@ export const Overview: React.FC<OverviewProps> = ({
   setActiveTab,
   onOpenUploader,
 }) => {
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+
   const pendingItems = state.items.filter((i) => i.status === 'pending');
   const approvedItems = state.items.filter((i) => i.status === 'approved');
 
   const pendingCount = pendingItems.length;
   const approvedCount = approvedItems.length;
 
+  const isSociology = state.activeTopic === 'Socialization & Stratification';
+  const subtitleByGoal: Record<NotebookState['studyGoal'], string> = {
+    exam_review: isSociology
+      ? 'Review definitions, compare systems and resources, and practice connecting individual outcomes to larger institutions.'
+      : `Verify core definitions, practice recall flashcards, and quiz yourself on ${state.activeTopic}.`,
+    concept_recall: `Build foundational terminology and verify every generated concept directly beside your ${state.activeTopic} source notes.`,
+    meeting_prep: `Review open questions, key decisions, and step-by-step action items grounded in your ${state.activeTopic} notes.`,
+    practical_howto: `Inspect step-by-step procedures, systems, and how-to instructions traced back to your ${state.activeTopic} source material.`,
+  };
+
   return (
-    <div className="max-w-4xl mx-auto py-10 px-8">
+    <div className="max-w-4xl mx-auto py-8 sm:py-10 px-4 sm:px-8">
       {/* Category Tagline matching Screenshot 3 */}
       <div className="flex items-center gap-2 mb-4">
         <span className="w-2 h-2 rounded-full bg-[#C05621]" />
         <span className="text-xs font-bold tracking-widest uppercase text-[#8C8477]">
-          {state.studyGoal === 'exam_review' && 'STRATIFICATION EXAM REVIEW'}
+          {state.studyGoal === 'exam_review' && (isSociology ? 'STRATIFICATION EXAM REVIEW' : `${state.activeTopic.toUpperCase()} EXAM REVIEW`)}
           {state.studyGoal === 'concept_recall' && 'CONCEPT RECALL WORKSPACE'}
           {state.studyGoal === 'meeting_prep' && 'PRACTICAL MEETING PREP'}
           {state.studyGoal === 'practical_howto' && 'HOW-TO SYSTEM GUIDE'}
@@ -43,21 +58,21 @@ export const Overview: React.FC<OverviewProps> = ({
       </div>
 
       {/* Big Serif Heading matching Screenshot 3 */}
-      <h1 className="text-4xl md:text-5xl font-serif font-normal text-[#1A1815] tracking-tight leading-tight mb-4">
-        {state.activeTopic === 'Socialization & Stratification' 
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal text-[#1A1815] tracking-tight leading-tight mb-4">
+        {isSociology
           ? 'Explain inequality from the source.'
           : `Master ${state.activeTopic} from the source.`}
       </h1>
 
-      <p className="text-lg text-[#5A5348] font-normal leading-relaxed mb-8 max-w-2xl">
-        Review definitions, compare systems and resources, and practice connecting individual outcomes to larger institutions.
+      <p className="text-base sm:text-lg text-[#5A5348] font-normal leading-relaxed mb-8 max-w-2xl">
+        {subtitleByGoal[state.studyGoal]}
       </p>
 
       {/* Next Up Hero Card matching Screenshot 3 */}
       {pendingCount > 0 ? (
-        <div 
+        <div
           onClick={() => setActiveTab('review')}
-          className="mb-8 p-5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-2xl flex items-center justify-between cursor-pointer hover:bg-[#F5ECE0] transition-all shadow-xs group"
+          className="mb-8 p-5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-2xl flex items-center justify-between cursor-pointer hover:bg-[#F5ECE0] transition-all shadow-sm group"
         >
           <div className="flex items-center gap-3">
             <span className="p-2 bg-[#EFE3CF] text-[#9A3412] rounded-xl group-hover:scale-105 transition-transform">
@@ -75,7 +90,7 @@ export const Overview: React.FC<OverviewProps> = ({
           <ArrowRight className="w-4 h-4 text-[#8C5209] group-hover:translate-x-1 transition-transform" />
         </div>
       ) : (
-        <div className="mb-8 p-5 bg-[#F2F7F3] border border-[#CCE2D2] rounded-2xl flex items-center justify-between">
+        <div className="mb-8 p-5 bg-[#F2F7F3] border border-[#CCE2D2] rounded-2xl flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="p-2 bg-[#DCEDE0] text-[#1B4D29] rounded-xl">
               <ShieldCheck className="w-4 h-4" />
@@ -90,8 +105,9 @@ export const Overview: React.FC<OverviewProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={() => setActiveTab('library')}
-            className="text-xs font-semibold text-[#1B4D29] hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-[#1B4D29] hover:underline flex items-center gap-1 shrink-0"
           >
             Go to Library &rarr;
           </button>
@@ -99,11 +115,11 @@ export const Overview: React.FC<OverviewProps> = ({
       )}
 
       {/* Two Metric Cards matching Screenshot 3 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
         {/* Needs your eye */}
-        <div 
+        <div
           onClick={() => setActiveTab('review')}
-          className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl hover:border-[#DACFB8] transition-all cursor-pointer shadow-2xs group"
+          className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl hover:border-[#DACFB8] transition-all cursor-pointer shadow-sm group"
         >
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-[#6B6355]">Needs your eye</span>
@@ -119,9 +135,9 @@ export const Overview: React.FC<OverviewProps> = ({
         </div>
 
         {/* In your library */}
-        <div 
+        <div
           onClick={() => setActiveTab('library')}
-          className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl hover:border-[#DACFB8] transition-all cursor-pointer shadow-2xs group"
+          className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl hover:border-[#DACFB8] transition-all cursor-pointer shadow-sm group"
         >
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-[#6B6355]">In your library</span>
@@ -138,9 +154,9 @@ export const Overview: React.FC<OverviewProps> = ({
       </div>
 
       {/* Workflow Explainer Banner matching Image 2 */}
-      <div className="p-6 bg-[#F4EFE6] border border-[#E3D9C8] rounded-2xl mb-10">
+      <div className="p-6 bg-[#F4EFE6] border border-[#E3D9C8] rounded-2xl mb-8">
         <div className="flex items-start gap-4">
-          <span className="p-2 rounded-xl bg-[#E8DECE] text-[#784004] mt-0.5">
+          <span className="p-2 rounded-xl bg-[#E8DECE] text-[#784004] mt-0.5 shrink-0">
             <Sparkles className="w-5 h-5" />
           </span>
           <div>
@@ -166,8 +182,9 @@ export const Overview: React.FC<OverviewProps> = ({
       </div>
 
       {/* Quick Study Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         <button
+          type="button"
           onClick={() => setActiveTab('flashcards')}
           className="p-4 bg-[#FAF7F0] border border-[#E8E2D5] rounded-xl hover:bg-[#F2ECE0] text-left transition-all"
         >
@@ -177,6 +194,7 @@ export const Overview: React.FC<OverviewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('quiz')}
           className="p-4 bg-[#FAF7F0] border border-[#E8E2D5] rounded-xl hover:bg-[#F2ECE0] text-left transition-all"
         >
@@ -186,6 +204,7 @@ export const Overview: React.FC<OverviewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={onOpenUploader}
           className="p-4 bg-[#FAF7F0] border border-[#E8E2D5] rounded-xl hover:bg-[#F2ECE0] text-left transition-all"
         >
@@ -194,7 +213,46 @@ export const Overview: React.FC<OverviewProps> = ({
           <div className="text-xs text-[#6B6355] mt-1">Paste lecture notes or text</div>
         </button>
       </div>
+
+      {/* Trusted Source Documents Inspector */}
+      {state.documents.length > 0 && (
+        <div className="p-5 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl">
+          <div className="text-[11px] font-bold tracking-widest uppercase text-[#8C8477] mb-3">
+            TRUSTED SOURCE MATERIAL ({state.documents.length})
+          </div>
+          <div className="space-y-2.5">
+            {state.documents.map((doc) => {
+              const isOpen = expandedDocId === doc.id;
+              return (
+                <div key={doc.id} className="border border-[#E5DFD3] rounded-xl bg-[#FBF9F5] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedDocId(isOpen ? null : doc.id)}
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#F5F2EB] transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-4 h-4 text-[#8C5209] shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-[#1A1815] truncate">{doc.title}</div>
+                        <div className="text-[11px] text-[#7A7264] truncate">{doc.fileName}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 text-xs text-[#8C5209]">
+                      <span className="hidden sm:inline">{isOpen ? 'Hide notes' : 'View raw notes'}</span>
+                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <pre className="p-4 border-t border-[#E5DFD3] bg-[#F7F4EC] text-xs text-[#3A352F] font-mono whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto">
+                      {doc.rawContent}
+                    </pre>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

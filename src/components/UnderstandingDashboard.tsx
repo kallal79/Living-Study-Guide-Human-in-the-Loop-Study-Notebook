@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles, BookOpen, Tag, Calendar, Layers } from 'lucide-react';
+import { ArrowRight, Sparkles, BookOpen, Tag, Calendar, Clock } from 'lucide-react';
 import { NotebookState } from '../types';
 
 interface UnderstandingDashboardProps {
@@ -13,11 +13,12 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
 }) => {
   const approvedItems = state.items.filter((i) => i.status === 'approved');
   const pendingItems = state.items.filter((i) => i.status === 'pending');
-  const totalActive = approvedItems.length + pendingItems.length;
+  const activeItems = state.items.filter((i) => i.status !== 'discarded');
 
   // Group by tags
   const tagsMap: Record<string, { total: number; approved: number }> = {};
-  for (const item of state.items.filter((i) => i.status !== 'discarded')) {
+  const categoryMap: Record<string, { total: number; approved: number }> = {};
+  for (const item of activeItems) {
     if (!tagsMap[item.tag]) {
       tagsMap[item.tag] = { total: 0, approved: 0 };
     }
@@ -25,38 +26,72 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
     if (item.status === 'approved') {
       tagsMap[item.tag].approved++;
     }
+
+    if (!categoryMap[item.category]) {
+      categoryMap[item.category] = { total: 0, approved: 0 };
+    }
+    categoryMap[item.category].total++;
+    if (item.status === 'approved') {
+      categoryMap[item.category].approved++;
+    }
   }
 
   const tagKeys = Object.keys(tagsMap);
+  const categoryKeys = Object.keys(categoryMap);
   const totalNotesWithLens = state.items.length;
-  const sessionsCount = state.sessions.length > 0 ? state.sessions.length : 1;
+  const sessionsCount = state.sessions.length;
+  const foundationGoal = Math.min(8, activeItems.length || 8);
+
+  const coverageHeading =
+    approvedItems.length === 0
+      ? 'Start verifying your notes.'
+      : approvedItems.length >= foundationGoal
+        ? 'Your foundation is in place.'
+        : 'Your foundation is growing.';
+
+  const suggestedAction =
+    pendingItems.length > 0
+      ? {
+          title: 'Practice the claims.',
+          body: 'Terms give you the vocabulary. Reviewing pending claims and interpretations helps you trace how the vocabulary works.',
+          cta: 'Open review queue',
+          tab: 'review',
+        }
+      : {
+          title: 'Test your recall.',
+          body: 'Your review queue is clear. Reinforce retention by taking a source-grounded quiz or flipping through your flashcard boxes.',
+          cta: 'Start quick quiz',
+          tab: 'quiz',
+        };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-8">
+    <div className="max-w-4xl mx-auto py-8 sm:py-10 px-4 sm:px-8">
       {/* Top Section matching Screenshot 4: Two Hero Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Source-Linked Coverage Card (Takes 2 cols) */}
-        <div className="lg:col-span-2 p-7 bg-[#FAF7F0] border border-[#E8E2D5] rounded-3xl shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-2 p-7 bg-[#FAF7F0] border border-[#E8E2D5] rounded-3xl shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-[11px] font-bold tracking-widest uppercase text-[#8C8477]">
                 SOURCE-LINKED COVERAGE
               </span>
               <div className="w-12 h-12 rounded-full border-2 border-[#C05621] flex items-center justify-center font-serif font-bold text-sm text-[#1A1815] bg-[#FDFBF7]">
-                {approvedItems.length}/{Math.max(approvedItems.length, 8)}
+                {approvedItems.length}/{Math.max(approvedItems.length, foundationGoal)}
               </div>
             </div>
 
             <h2 className="text-2xl md:text-3xl font-serif font-bold text-[#1A1815] mb-2">
-              Your foundation is in place.
+              {coverageHeading}
             </h2>
             <p className="text-sm text-[#5C5549] leading-relaxed mb-6">
-              The approved key terms are ready for recall practice. Review the queue to deepen the edges.
+              {approvedItems.length > 0
+                ? 'The approved key terms are ready for recall practice. Review the queue to deepen the edges.'
+                : 'Approve candidate cards in the Review Queue so verified concepts enter your recall library.'}
             </p>
 
             {/* Topic Progress Bars matching Screenshot 4 */}
             <div className="space-y-4 pt-4 border-t border-[#EDE7DA]">
-              {tagKeys.slice(0, 4).map((tag, idx) => {
+              {tagKeys.slice(0, 5).map((tag, idx) => {
                 const info = tagsMap[tag];
                 const pct = info.total > 0 ? Math.round((info.approved / info.total) * 100) : 0;
                 const barColor = idx % 2 === 0 ? 'bg-[#2B5738]' : 'bg-[#C05621]';
@@ -66,7 +101,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
                     <div className="flex justify-between items-center text-xs font-medium text-[#4A4338] mb-1.5">
                       <span className="font-semibold">{tag}</span>
                       <span className="text-[#7A7264]">
-                        {info.approved} of {info.total} terms
+                        {info.approved} of {info.total} items
                       </span>
                     </div>
                     <div className="w-full bg-[#EAE4D7] h-2 rounded-full overflow-hidden">
@@ -89,18 +124,19 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
               SUGGESTED NEXT
             </div>
             <h3 className="text-2xl font-serif font-bold mb-3 leading-tight text-white">
-              Practice the claims.
+              {suggestedAction.title}
             </h3>
             <p className="text-sm text-[#D1E3ED] leading-relaxed mb-6 font-light">
-              Terms give you the vocabulary. Lecture claims help you explain what the vocabulary is doing.
+              {suggestedAction.body}
             </p>
           </div>
 
           <button
-            onClick={() => setActiveTab('review')}
-            className="w-full py-3 px-4 bg-[#FAF7F0] hover:bg-[#FFFFFF] text-[#233D4D] rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs"
+            type="button"
+            onClick={() => setActiveTab(suggestedAction.tab)}
+            className="w-full py-3 px-4 bg-[#FAF7F0] hover:bg-[#FFFFFF] text-[#233D4D] rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm"
           >
-            <span>Open review queue</span>
+            <span>{suggestedAction.cta}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -109,7 +145,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
       {/* Three Metric Cards matching Screenshot 4 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
         {/* Review Habit */}
-        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-2xs">
+        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 text-xs font-medium text-[#7A7264] mb-3">
             <Calendar className="w-4 h-4 text-[#8C5209]" />
             <span>Review habit</span>
@@ -118,12 +154,12 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
             {sessionsCount}
           </div>
           <div className="text-xs text-[#7A7264]">
-            session{sessionsCount === 1 ? '' : 's'} started this week
+            session{sessionsCount === 1 ? '' : 's'} logged
           </div>
         </div>
 
         {/* Interpretation */}
-        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-2xs">
+        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 text-xs font-medium text-[#7A7264] mb-3">
             <BookOpen className="w-4 h-4 text-[#2B5738]" />
             <span>Interpretation</span>
@@ -137,7 +173,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
         </div>
 
         {/* Tags in use */}
-        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-2xs">
+        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 text-xs font-medium text-[#7A7264] mb-3">
             <Tag className="w-4 h-4 text-[#C05621]" />
             <span>Tags in use</span>
@@ -151,10 +187,58 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
         </div>
       </div>
 
+      {/* Knowledge Type Breakdown + Recent Study Log */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        {/* Category Breakdown */}
+        <div className="p-5 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
+          <div className="text-[11px] font-bold tracking-widest uppercase text-[#8C8477] mb-3">
+            BY KNOWLEDGE TYPE
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categoryKeys.map((cat) => {
+              const c = categoryMap[cat];
+              return (
+                <div
+                  key={cat}
+                  className="px-3 py-1.5 rounded-xl bg-[#F5F2EB] border border-[#E5DFD3] text-xs flex items-center gap-2"
+                >
+                  <span className="font-semibold text-[#1A1815]">{cat}</span>
+                  <span className="text-[#2B5738] font-bold">
+                    {c.approved}/{c.total}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Study Sessions */}
+        <div className="p-5 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
+          <div className="text-[11px] font-bold tracking-widest uppercase text-[#8C8477] mb-3">
+            RECENT SESSIONS
+          </div>
+          {state.sessions.length > 0 ? (
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {state.sessions.slice(0, 4).map((s) => (
+                <div key={s.id} className="text-xs flex items-start justify-between gap-2 pb-1.5 border-b border-[#EAE4D7] last:border-0">
+                  <div className="text-[#2C2824] truncate">{s.notes}</div>
+                  <span className="text-[11px] text-[#7A7264] flex items-center gap-1 shrink-0">
+                    <Clock className="w-3 h-3" />
+                    {s.durationMinutes}m
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-[#7A7264]">No sessions logged yet.</p>
+          )}
+        </div>
+      </div>
+
       {/* Explanatory Bottom Card matching Screenshot 4 */}
       <div className="p-6 bg-[#EFEBE1] border border-[#DDD5C7] rounded-2xl">
         <div className="flex items-start gap-3.5">
-          <span className="p-1.5 rounded-lg bg-[#E2DACB] text-[#5C5549] mt-0.5">
+          <span className="p-1.5 rounded-lg bg-[#E2DACB] text-[#5C5549] mt-0.5 shrink-0">
             <Sparkles className="w-4 h-4" />
           </span>
           <div>
@@ -162,7 +246,8 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
               A note on this dashboard
             </h4>
             <p className="text-xs text-[#6B6355] leading-relaxed">
-              Progress here reflects what has entered your notebook, not whether you have mastered sociology. The next useful move is the one that makes an idea easier to retrieve and easier to trace.
+              Progress here reflects what has entered your notebook, not whether you have mastered{' '}
+              {state.activeTopic.toLowerCase()}. The next useful move is the one that makes an idea easier to retrieve and easier to trace.
             </p>
           </div>
         </div>
@@ -170,4 +255,3 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
     </div>
   );
 };
-

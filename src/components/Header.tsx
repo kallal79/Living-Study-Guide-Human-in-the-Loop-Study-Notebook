@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Unlock, Download, ShieldCheck, Volume2, VolumeX, CloudRain, Wind, Coffee } from 'lucide-react';
+import { Lock, Unlock, Download, ShieldCheck, Volume2, VolumeX, CloudRain, Wind, Coffee, Menu } from 'lucide-react';
 import { NotebookState } from '../types';
 import { startAmbientSound, stopAmbientSound } from '../utils/sound';
 
@@ -7,12 +7,14 @@ interface HeaderProps {
   state: NotebookState;
   onLockNotebook: () => void;
   onExportBackup: () => void;
+  onOpenMobileNav?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   state,
   onLockNotebook,
   onExportBackup,
+  onOpenMobileNav,
 }) => {
   const [ambientActive, setAmbientActive] = useState(false);
   const [ambientPreset, setAmbientPreset] = useState<'rain' | 'zen' | 'library'>('rain');
@@ -36,28 +38,39 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 border-b border-[#E8E2D5] bg-[#FBF9F5]/90 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-20">
-      {/* Breadcrumb matching Screenshot 3 */}
-      <div className="flex items-center gap-3 text-xs tracking-wider uppercase font-semibold text-[#8C8477]">
-        <div className="flex items-center gap-2">
+    <header className="h-16 border-b border-[#E8E2D5] bg-[#FBF9F5]/95 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 gap-3">
+      {/* Mobile Menu Trigger + Breadcrumb matching Screenshot 3 */}
+      <div className="flex items-center gap-3 text-xs tracking-wider uppercase font-semibold text-[#8C8477] min-w-0">
+        {onOpenMobileNav && (
+          <button
+            type="button"
+            onClick={onOpenMobileNav}
+            aria-label="Open navigation menu"
+            className="md:hidden p-2 rounded-lg text-[#5C5549] hover:bg-[#EFEAE0] border border-[#E0D9CB]"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+        )}
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
           <div className="w-2 h-2 rounded-full bg-[#C05621]" />
           <span>{currentDate}</span>
         </div>
-        <span>/</span>
-        <span className="text-[#3A352F] flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#2B5738]" />
-          PRIVATE NOTEBOOK
+        <span className="hidden sm:inline">/</span>
+        <span className="text-[#3A352F] flex items-center gap-1.5 truncate">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#2B5738] shrink-0" />
+          <span className="truncate">PRIVATE NOTEBOOK</span>
         </span>
       </div>
 
       {/* Action Controls & Ambient Focus Sound & Avatar */}
-      <div className="flex items-center gap-3 relative">
+      <div className="flex items-center gap-2 sm:gap-3 relative shrink-0">
         {/* Ambient Focus Audio Button */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowAmbientMenu(!showAmbientMenu)}
             title="Focus Ambient Sounds (Rain, Zen Stream, Quiet Room)"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               ambientActive
                 ? 'bg-[#E7F0E9] text-[#2B5738] border-[#A3D7BD]'
                 : 'text-[#5C5549] hover:bg-[#EFEAE0] border-[#E0D9CB]'
@@ -66,12 +79,12 @@ export const Header: React.FC<HeaderProps> = ({
             {ambientActive ? (
               <>
                 <Volume2 className="w-3.5 h-3.5 text-[#2B5738] animate-pulse" />
-                <span className="capitalize">{ambientPreset}</span>
+                <span className="capitalize hidden sm:inline">{ambientPreset}</span>
               </>
             ) : (
               <>
                 <VolumeX className="w-3.5 h-3.5 text-[#8C8477]" />
-                <span>Ambient Focus</span>
+                <span className="hidden sm:inline">Ambient Focus</span>
               </>
             )}
           </button>
@@ -82,6 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Ambient Background
               </div>
               <button
+                type="button"
                 onClick={() => {
                   toggleAmbient('rain');
                   setShowAmbientMenu(false);
@@ -94,6 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Gentle Rain</span>
               </button>
               <button
+                type="button"
                 onClick={() => {
                   toggleAmbient('zen');
                   setShowAmbientMenu(false);
@@ -106,6 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Zen Stream</span>
               </button>
               <button
+                type="button"
                 onClick={() => {
                   toggleAmbient('library');
                   setShowAmbientMenu(false);
@@ -119,6 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
               {ambientActive && (
                 <button
+                  type="button"
                   onClick={() => {
                     stopAmbientSound();
                     setAmbientActive(false);
@@ -135,36 +152,38 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={onExportBackup}
           title="Download full JSON backup of study guide"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#5C5549] hover:bg-[#EFEAE0] border border-[#E0D9CB] transition-colors"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-[#5C5549] hover:bg-[#EFEAE0] border border-[#E0D9CB] transition-colors"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Backup</span>
+          <span className="hidden sm:inline">Backup</span>
         </button>
 
         <button
+          type="button"
           onClick={onLockNotebook}
           title="Lock private notebook (Phase IV Security Check)"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#5C5549] hover:bg-[#EFEAE0] border border-[#E0D9CB] transition-colors"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-[#5C5549] hover:bg-[#EFEAE0] border border-[#E0D9CB] transition-colors"
         >
           {state.isLocked ? (
             <>
               <Lock className="w-3.5 h-3.5 text-[#C05621]" />
-              <span>Locked</span>
+              <span className="hidden sm:inline">Lock Now</span>
             </>
           ) : (
             <>
               <Unlock className="w-3.5 h-3.5 text-[#2B5738]" />
-              <span>Private Lock</span>
+              <span className="hidden sm:inline">Private Lock</span>
             </>
           )}
         </button>
 
         {/* User Avatar Circle 'B' as in screenshot 3 */}
-        <div 
-          className="w-8 h-8 rounded-full bg-[#EADCC8] text-[#7A3F05] flex items-center justify-center font-serif font-bold text-sm border border-[#DAC9AF] shadow-xs cursor-pointer select-none"
-          title="Learner Profile (Bjones3623)"
+        <div
+          className="w-8 h-8 rounded-full bg-[#EADCC8] text-[#7A3F05] flex items-center justify-center font-serif font-bold text-sm border border-[#DAC9AF] shadow-sm cursor-pointer select-none"
+          title="Private Notebook Owner"
         >
           B
         </div>

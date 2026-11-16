@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { extractStudyItemsFromText, verifyGroundedness, getGroundedTokens } from '../src/utils/extractor';
+import {
+  extractStudyItemsFromText,
+  verifyGroundedness,
+  getGroundedTokens,
+  getExtractionSummary,
+} from '../src/utils/extractor';
 
 describe('Grounded Source Extractor & Verification', () => {
   const sampleNote = `
@@ -25,6 +30,8 @@ Can individual agency meaningfully alter deeply entrenched institutional inequal
       expect(item.sourceFact.length).toBeGreaterThan(15);
       expect(item.flashcard.front).toBeDefined();
       expect(item.quizQuestion.options.length).toBe(4);
+      // All 4 quiz options must be distinct
+      expect(new Set(item.quizQuestion.options).size).toBe(4);
       expect(item.quizQuestion.explanation).toContain(item.sourceFact);
     }
 
@@ -34,12 +41,10 @@ Can individual agency meaningfully alter deeply entrenched institutional inequal
   });
 
   it('detects hallucinated additions vs faithful grounding (Rome fell test case from mission prompt)', () => {
-    // Mission prompt test case:
-    // "Rome fell in 476 AD." -> card says "Rome fell in 476 AD because of barbarian invasions."
-    // 4 words got added and are not in notes.
-    const verbatimSource = "Rome fell in 476 AD.";
-    const faithfulInterpretation = "Rome fell in 476 AD.";
-    const hallucinatedInterpretation = "Rome fell in 476 AD because of barbarian invasions and military collapse.";
+    const verbatimSource = 'Rome fell in 476 AD.';
+    const faithfulInterpretation = 'Rome fell in 476 AD.';
+    const hallucinatedInterpretation =
+      'Rome fell in 476 AD because of barbarian invasions and military collapse.';
 
     const faithfulCheck = verifyGroundedness(verbatimSource, faithfulInterpretation);
     expect(faithfulCheck.isSuspicious).toBe(false);
@@ -52,8 +57,8 @@ Can individual agency meaningfully alter deeply entrenched institutional inequal
   });
 
   it('annotates token grounding correctly for visual trace in ReviewCard', () => {
-    const source = "The self is social.";
-    const interp = "The self is social because of external factors.";
+    const source = 'The self is social.';
+    const interp = 'The self is social because of external factors.';
 
     const tokens = getGroundedTokens(source, interp);
     expect(tokens.length).toBeGreaterThan(3);
@@ -65,10 +70,11 @@ Can individual agency meaningfully alter deeply entrenched institutional inequal
     expect(selfToken?.isGrounded).toBe(true);
   });
 
-  it('handles bullet definitions and strips lecture transcript timestamps', () => {
+  it('preserves Term: Definition lines and strips lecture transcript timestamps', () => {
     const transcript = `
 # AWS Lecture 1
 [05:22] Professor: In computing, a client can be a web browser or desktop application that a person interacts with to make requests to computer servers.
+Kill Switch: A kill switch exists for shutting off risky behavior mid-incident before queues saturate.
 - Elastic Compute Cloud: A type of virtual server on AWS.
 `;
     const items = extractStudyItemsFromText(transcript, {
@@ -77,20 +83,48 @@ Can individual agency meaningfully alter deeply entrenched institutional inequal
       fileName: 'transcript.txt',
     });
 
-    expect(items.length).toBeGreaterThanOrEqual(2);
+    expect(items.length).toBe(3);
     expect(items[0].sourceFact).not.toContain('[05:22]');
-    expect(items[1].title).toContain('Elastic Compute Cloud');
+    expect(items[1].title).toBe('Kill Switch');
+    expect(items[1].category).toBe('KEY TERM');
+    expect(items[2].title).toContain('Elastic Compute Cloud');
+
+    const summary = getExtractionSummary(items);
+    expect(summary.total).toBe(3);
+    expect(summary.byCategory['KEY TERM']).toBe(2);
+  });
+
+  it('always produces 4 unique quiz options even with only 2 input sentences', () => {
+    const twoLines = `
+First concept: Alpha represents the primary entry condition for all local queries.
+Second concept: Beta represents the secondary validation check before writing state.
+`;
+    const items = extractStudyItemsFromText(twoLines, {
+      documentTitle: 'Short Note',
+      courseTopic: 'Testing',
+      fileName: 'short.txt',
+    });
+
+    expect(items.length).toBe(2);
+    for (const item of items) {
+      expect(new Set(item.quizQuestion.options).size).toBe(4);
+    }
   });
 
   it('creates quiz questions strictly grounded in verbatim citations', () => {
-    const items = extractStudyItemsFromText("Mead argued that we learn to see ourselves from other people's perspectives.", {
-      documentTitle: 'Mead Notes',
-      courseTopic: 'Socialization',
-      fileName: 'mead.txt',
-    });
+    const items = extractStudyItemsFromText(
+      "Mead argued that we learn to see ourselves from other people's perspectives.",
+      {
+        documentTitle: 'Mead Notes',
+        courseTopic: 'Socialization',
+        fileName: 'mead.txt',
+      }
+    );
 
     const item = items[0];
-    expect(item.quizQuestion.explanation).toContain("Mead argued that we learn to see ourselves from other people's perspectives.");
+    expect(item.quizQuestion.explanation).toContain(
+      "Mead argued that we learn to see ourselves from other people's perspectives."
+    );
     const correctOption = item.quizQuestion.options[item.quizQuestion.correctOptionIndex];
     expect(correctOption).toBe(item.studyInterpretation);
   });

@@ -1,18 +1,7 @@
-import React, { useState } from 'react';
-import { 
-  X, 
-  Settings as SettingsIcon, 
-  Download, 
-  Upload, 
-  RotateCcw, 
-  Lock, 
-  ShieldCheck, 
-  Check,
-  BookOpen
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Settings as SettingsIcon, Download, Upload, Lock, Check, RotateCcw } from 'lucide-react';
 import { NotebookState } from '../types';
 import { downloadBackup } from '../utils/storage';
-import { initialNotebookState } from '../data/initialData';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -21,24 +10,39 @@ interface SettingsModalProps {
   onUpdateSettings: (updates: Partial<NotebookState>) => void;
   onRestoreState: (restored: NotebookState) => void;
   onResetToDemo: (mode: 'sociology' | 'aws') => void;
+  onRestoreDiscarded?: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
+export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <SettingsModalInner {...props} />;
+};
+
+const SettingsModalInner: React.FC<SettingsModalProps> = ({
   onClose,
   state,
   onUpdateSettings,
   onRestoreState,
   onResetToDemo,
+  onRestoreDiscarded,
 }) => {
-  if (!isOpen) return null;
-
   const [notebookName, setNotebookName] = useState(state.notebookName);
   const [activeTopic, setActiveTopic] = useState(state.activeTopic);
   const [studyGoal, setStudyGoal] = useState(state.studyGoal);
   const [isLocked, setIsLocked] = useState(state.isLocked);
   const [passcode, setPasscode] = useState(state.passcode);
   const [statusMessage, setStatusMessage] = useState('');
+
+  // Keep local form synchronized if presets are switched while modal is open
+  useEffect(() => {
+    setNotebookName(state.notebookName);
+    setActiveTopic(state.activeTopic);
+    setStudyGoal(state.studyGoal);
+    setIsLocked(state.isLocked);
+    setPasscode(state.passcode);
+  }, [state.notebookName, state.activeTopic, state.studyGoal, state.isLocked, state.passcode]);
+
+  const discardedCount = state.items.filter((i) => i.status === 'discarded').length;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,13 +51,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       activeTopic,
       studyGoal,
       isLocked,
-      passcode,
+      passcode: passcode.trim() || '1234',
     });
     setStatusMessage('Settings saved successfully!');
     setTimeout(() => {
       setStatusMessage('');
       onClose();
-    }, 800);
+    }, 600);
   };
 
   const handleRestoreFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,11 +70,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed && Array.isArray(parsed.items)) {
           onRestoreState(parsed);
-          setStatusMessage('Backup restored successfully!');
+          setStatusMessage('Backup restored and saved!');
           setTimeout(() => {
             setStatusMessage('');
             onClose();
-          }, 1000);
+          }, 800);
         } else {
           alert('Invalid backup file structure.');
         }
@@ -82,8 +86,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-xl p-7 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-xl p-6 sm:p-7 shadow-2xl relative my-4">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-5">
           <div className="flex items-center gap-2.5">
@@ -92,7 +96,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </span>
             <div>
               <h3 className="text-xl font-serif font-bold text-[#1A1815]">
-                Notebook Settings & Security
+                Notebook Settings &amp; Security
               </h3>
               <p className="text-xs text-[#7A7264]">
                 Manage study goals, private access, and backups.
@@ -100,7 +104,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close modal"
             className="p-1.5 rounded-lg text-[#7A7264] hover:bg-[#EFEAE0] transition-colors"
           >
             <X className="w-5 h-5" />
@@ -114,7 +120,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-4 mb-6">
+        <form onSubmit={handleSave} className="space-y-4">
           {/* Notebook Name */}
           <div>
             <label className="block text-xs font-semibold text-[#5A5348] mb-1">
@@ -150,13 +156,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </label>
             <select
               value={studyGoal}
-              onChange={(e) => setStudyGoal(e.target.value as any)}
+              onChange={(e) => setStudyGoal(e.target.value as NotebookState['studyGoal'])}
               className="w-full px-3 py-2 bg-[#F5F2EB] border border-[#DDD5C7] rounded-lg text-sm text-[#1A1815] focus:outline-none focus:border-[#C05621]"
             >
-              <option value="exam_review">Exam Review (Flashcards & Verification)</option>
+              <option value="exam_review">Exam Review (Flashcards &amp; Verification)</option>
               <option value="concept_recall">Concept Recall (Foundational Terms)</option>
               <option value="practical_howto">Practical How-To Knowledge</option>
-              <option value="meeting_prep">Meeting Preparation & Open Questions</option>
+              <option value="meeting_prep">Meeting Preparation &amp; Open Questions</option>
             </select>
           </div>
 
@@ -202,7 +208,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <p className="text-xs text-[#6B6355] mb-3 leading-relaxed">
               Export an exact copy of your notes, approved cards, review queue, and progress.
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => downloadBackup(state)}
@@ -225,25 +231,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Switch Demo Data */}
-          <div className="pt-2 flex items-center justify-between text-xs text-[#7A7264]">
-            <span>Preset Switcher:</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onResetToDemo('sociology')}
-                className="text-xs text-[#8C5209] hover:underline"
-              >
-                Load Sociology 101
-              </button>
-              <span>•</span>
-              <button
-                type="button"
-                onClick={() => onResetToDemo('aws')}
-                className="text-xs text-[#8C5209] hover:underline"
-              >
-                Load AWS Module 1
-              </button>
+          {/* Discarded Recovery & Switch Demo Data */}
+          <div className="pt-2 space-y-2 text-xs text-[#7A7264]">
+            {discardedCount > 0 && onRestoreDiscarded && (
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F2EB] border border-[#E5DFD3]">
+                <span>{discardedCount} discarded item{discardedCount === 1 ? '' : 's'}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRestoreDiscarded();
+                    setStatusMessage('Restored discarded cards back to Review Queue!');
+                  }}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#8C5209] hover:underline"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Restore to Queue</span>
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <span>Preset Switcher:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onResetToDemo('sociology');
+                    setStatusMessage('Loaded Sociology 101 preset!');
+                  }}
+                  className="text-xs text-[#8C5209] hover:underline"
+                >
+                  Load Sociology 101
+                </button>
+                <span>&bull;</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onResetToDemo('aws');
+                    setStatusMessage('Loaded AWS Module 1 preset!');
+                  }}
+                  className="text-xs text-[#8C5209] hover:underline"
+                >
+                  Load AWS Module 1
+                </button>
+              </div>
             </div>
           </div>
 
@@ -258,7 +289,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+              className="px-5 py-2.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
             >
               Save Settings
             </button>
@@ -268,4 +299,3 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 };
-

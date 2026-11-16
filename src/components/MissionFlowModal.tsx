@@ -8,8 +8,12 @@ interface MissionFlowModalProps {
   onClose: () => void;
 }
 
-export const MissionFlowModal: React.FC<MissionFlowModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+export const MissionFlowModal: React.FC<MissionFlowModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <MissionFlowModalInner {...props} />;
+};
+
+const MissionFlowModalInner: React.FC<MissionFlowModalProps> = ({ onClose }) => {
 
   const [decision, setDecision] = useState<'idle' | 'approved' | 'edited' | 'discarded'>('idle');
 
@@ -24,7 +28,7 @@ export const MissionFlowModal: React.FC<MissionFlowModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-3xl p-8 shadow-2xl relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-6">

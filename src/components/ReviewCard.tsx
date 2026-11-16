@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Edit3, Trash2, FileText, AlertTriangle, ShieldCheck, Sparkles, Eye } from 'lucide-react';
+import { Check, Edit3, Trash2, FileText, AlertTriangle, ShieldCheck, Eye } from 'lucide-react';
 import { StudyItem } from '../types';
 import { verifyGroundedness, getGroundedTokens } from '../utils/extractor';
 
@@ -31,7 +31,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       className={`p-6 rounded-2xl border transition-all duration-200 bg-[#FAF7F0] ${
         isSelected
           ? 'border-[#C05621] ring-1 ring-[#C05621] shadow-md bg-[#FAF4EA]'
-          : 'border-[#E8E2D5] hover:border-[#DACFB8] shadow-xs'
+          : 'border-[#E8E2D5] hover:border-[#DACFB8] shadow-sm'
       }`}
     >
       {/* Top Header: Checkbox + Tags */}
@@ -162,8 +162,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         {/* Action Buttons matching Screenshot 5 */}
         <div className="flex items-center gap-2 shrink-0">
           <button
+            type="button"
             onClick={() => onApprove(item.id)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
           >
             <Check className="w-3.5 h-3.5" />
             <span>Approve</span>

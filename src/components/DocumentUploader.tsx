@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, UploadCloud, FileText, Sparkles, BookMarked, Check } from 'lucide-react';
-import { extractStudyItemsFromText } from '../utils/extractor';
+import React, { useState, useMemo } from 'react';
+import { X, UploadCloud, Sparkles, Check } from 'lucide-react';
+import { extractStudyItemsFromText, getExtractionSummary } from '../utils/extractor';
 import { StudyItem, SourceDocument } from '../types';
 import { initialDocuments } from '../data/initialData';
 
@@ -10,18 +10,33 @@ interface DocumentUploaderProps {
   onIngestItems: (newItems: StudyItem[], newDoc: SourceDocument) => void;
 }
 
-export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
-  isOpen,
+export const DocumentUploader: React.FC<DocumentUploaderProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <DocumentUploaderInner {...props} />;
+};
+
+const DocumentUploaderInner: React.FC<DocumentUploaderProps> = ({
   onClose,
   onIngestItems,
 }) => {
-  if (!isOpen) return null;
-
-  const [mode, setMode] = useState<'paste' | 'preset'>('paste');
   const [title, setTitle] = useState('');
   const [courseTopic, setCourseTopic] = useState('');
   const [rawText, setRawText] = useState('');
-  const [studyGoal, setStudyGoal] = useState<'exam_review' | 'concept_recall' | 'meeting_prep' | 'practical_howto'>('exam_review');
+  const [studyGoal, setStudyGoal] = useState<
+    'exam_review' | 'concept_recall' | 'meeting_prep' | 'practical_howto'
+  >('exam_review');
+
+  const previewItems = useMemo(() => {
+    if (!rawText.trim()) return [];
+    return extractStudyItemsFromText(rawText, {
+      documentTitle: title.trim() || 'Preview',
+      courseTopic: courseTopic.trim() || 'General',
+      fileName: 'preview.txt',
+      studyGoal,
+    });
+  }, [rawText, title, courseTopic, studyGoal]);
+
+  const previewSummary = useMemo(() => getExtractionSummary(previewItems), [previewItems]);
 
   const handlePresetSelect = (presetIndex: number) => {
     const doc = initialDocuments[presetIndex];
@@ -29,7 +44,9 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       setTitle(doc.title);
       setCourseTopic(doc.courseTopic);
       setRawText(doc.rawContent);
-      setMode('paste');
+      if (presetIndex === 2) {
+        setStudyGoal('meeting_prep');
+      }
     }
   };
 
@@ -38,7 +55,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     if (!file) return;
 
     setTitle(file.name.replace(/\.[^/.]+$/, ''));
-    setCourseTopic(file.name.split('_')[0] || 'Study Notes');
+    setCourseTopic(file.name.split(/[_-]/)[0] || 'Study Notes');
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -79,8 +96,8 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-2xl p-7 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl relative my-4">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-5">
           <div className="flex items-center gap-2.5">
@@ -97,7 +114,9 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close modal"
             className="p-1.5 rounded-lg text-[#7A7264] hover:bg-[#EFEAE0] transition-colors"
           >
             <X className="w-5 h-5" />
@@ -105,12 +124,12 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         </div>
 
         {/* Preset Selector Banner */}
-        <div className="p-3.5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-2xl mb-5 flex items-center justify-between">
+        <div className="p-3.5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-2xl mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs text-[#784004] font-medium">
-            <Sparkles className="w-4 h-4 text-[#C05621]" />
-            <span>Try sample learner materials:</span>
+            <Sparkles className="w-4 h-4 text-[#C05621] shrink-0" />
+            <span>Load sample material:</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={() => handlePresetSelect(0)}
@@ -124,6 +143,13 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
               className="px-2.5 py-1 bg-[#FAF7F0] hover:bg-[#FFFFFF] text-[#784004] border border-[#ECDDC8] rounded-lg text-xs font-semibold transition-colors"
             >
               AWS Module 1
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePresetSelect(2)}
+              className="px-2.5 py-1 bg-[#FAF7F0] hover:bg-[#FFFFFF] text-[#784004] border border-[#ECDDC8] rounded-lg text-xs font-semibold transition-colors"
+            >
+              Incident Runbook
             </button>
           </div>
         </div>
@@ -164,7 +190,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
               <label className="text-xs font-semibold text-[#5A5348]">
                 Paste Lecture Notes or Upload Text File
               </label>
-              <label className="text-xs text-[#8C5209] hover:underline cursor-pointer">
+              <label className="text-xs text-[#8C5209] hover:underline cursor-pointer font-medium">
                 Upload File (.txt, .md)
                 <input
                   type="file"
@@ -184,6 +210,22 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             />
           </div>
 
+          {/* Live Extraction Preview */}
+          {rawText.trim().length > 0 && (
+            <div className="p-3 bg-[#E7F0E9]/80 border border-[#BDDDC2] rounded-xl text-xs text-[#204E2D] flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold">
+                Live Preview: {previewSummary.total} candidate{previewSummary.total === 1 ? '' : 's'} detected
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(previewSummary.byCategory).map(([cat, count]) => (
+                  <span key={cat} className="px-2 py-0.5 bg-white/80 rounded-md font-mono text-[10px] border border-[#BDDDC2]">
+                    {cat}: {count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Study Goal Setting matching prompt */}
           <div>
             <label className="block text-xs font-semibold text-[#5A5348] mb-1">
@@ -199,7 +241,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
                 <button
                   type="button"
                   key={g.id}
-                  onClick={() => setStudyGoal(g.id as any)}
+                  onClick={() => setStudyGoal(g.id as typeof studyGoal)}
                   className={`p-2 rounded-lg border text-center font-medium transition-all ${
                     studyGoal === g.id
                       ? 'bg-[#1A1815] text-[#FAF7F0] border-[#1A1815]'
@@ -223,10 +265,11 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+              disabled={previewSummary.total === 0}
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-[#2B5738] hover:bg-[#22452D] disabled:opacity-40 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Extract to Review Queue</span>
+              <span>Extract {previewSummary.total > 0 ? `(${previewSummary.total}) ` : ''}to Review Queue</span>
             </button>
           </div>
         </form>
@@ -234,4 +277,3 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     </div>
   );
 };
-

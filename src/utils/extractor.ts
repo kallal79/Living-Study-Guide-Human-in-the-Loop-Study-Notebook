@@ -113,6 +113,19 @@ export function verifyGroundedness(sourceFact: string, interpretation: string): 
   };
 }
 
+let idSequence = 0;
+
+export function getExtractionSummary(items: StudyItem[]): {
+  total: number;
+  byCategory: Record<string, number>;
+} {
+  const byCategory: Record<string, number> = {};
+  for (const item of items) {
+    byCategory[item.category] = (byCategory[item.category] || 0) + 1;
+  }
+  return { total: items.length, byCategory };
+}
+
 /**
  * Intelligent parser that extracts concepts, terminology, systems, processes,
  * how-to instructions, and questions to investigate from raw study notes.
@@ -128,7 +141,7 @@ export function extractStudyItemsFromText(
 ): StudyItem[] {
   const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const items: StudyItem[] = [];
-  const docId = `doc-${Date.now().toString(36)}`;
+  const docId = `doc-${Date.now().toString(36)}-${++idSequence}`;
   let currentHeading = options.courseTopic || 'General Study';
 
   const processedChunks: Array<{
@@ -143,24 +156,30 @@ export function extractStudyItemsFromText(
     const line = lines[i];
 
     // Detect headings (# Header, or Header:)
-    if (line.startsWith('#') || (line.endsWith(':') && line.length < 50) || (line.length < 40 && !line.includes('.'))) {
+    if (line.startsWith('#') || (line.endsWith(':') && line.length < 50) || (line.length < 40 && !line.includes('.') && !line.includes(':'))) {
       currentHeading = line.replace(/^[#*\-0-9.\s]+/, '').replace(/:$/, '').trim() || currentHeading;
       continue;
     }
 
-    // Strip timestamps like [00:14] or speaker tags "Professor:"
-    const cleanLine = line.replace(/^\[\d{1,2}:\d{2}(?::\d{2})?\]\s*/, '').replace(/^[A-Za-z\s]+:\s*/, '');
+    // Strip lecture timestamps like [05:22] and explicit speaker labels like "Professor:"
+    const hasTimestamp = /^\[\d{1,2}:\d{2}(?::\d{2})?\]\s*/.test(line);
+    let cleanLine = line.replace(/^\[\d{1,2}:\d{2}(?::\d{2})?\]\s*/, '');
+    if (hasTimestamp) {
+      cleanLine = cleanLine.replace(/^[A-Za-z\s.]{2,30}:\s*/, '');
+    } else {
+      cleanLine = cleanLine.replace(/^(?:Professor|Lecturer|Speaker|Host|Instructor|Moderator)\s*:\s*/i, '');
+    }
 
-    // Check if line is a bullet list definition: "- Term: Definition" or "**Term**: Definition"
-    const defMatch = cleanLine.match(/^[-*•]?\s*(?:\*\*)?([A-Za-z0-9\s—–'-]{3,35})(?:\*\*)?\s*[:—–-]\s*(.+)$/);
-    if (defMatch) {
+    // Check if line is a bullet/key-term definition: "- Term: Definition", "**Term**: Definition", or "Term: Definition"
+    const defMatch = cleanLine.match(/^[-*•]?\s*(?:\*\*)?([A-Za-z0-9\s—–'-]{3,35})(?:\*\*)?\s*(?::|—|–|\s-\s)\s+(.+)$/);
+    if (defMatch && !defMatch[1].toLowerCase().startsWith('http')) {
       const termTitle = defMatch[1].trim();
       const termBody = defMatch[2].trim();
       if (termBody.length >= 15) {
         processedChunks.push({
-          sentence: cleanLine.replace(/^[-*•]\s*/, ''),
+          sentence: cleanLine.replace(/^[-*•]\s*/, '').replace(/\*\*/g, ''),
           heading: currentHeading,
-          category: 'KEY TERM',
+          category: termBody.toLowerCase().startsWith('to ') || termBody.toLowerCase().includes('step') ? 'HOW-TO' : 'KEY TERM',
           title: termTitle,
           interpretation: termBody,
         });
@@ -239,26 +258,43 @@ export function extractStudyItemsFromText(
       : `Explain the source concept: "${title}"`;
     const flashcardBack = interpretation;
 
-    // Build context-aware distractors from sibling items
-    const siblingDistractors = allInterpretations.filter((interp) => interp !== interpretation);
-    const d1 = siblingDistractors[idx % siblingDistractors.length] || `Opposite assertion: The contrary condition holds true.`;
-    const d2 = siblingDistractors[(idx + 1) % siblingDistractors.length] || `Extraneous assumption not documented in the provided notes.`;
-    const d3 = siblingDistractors[(idx + 2) % siblingDistractors.length] || `Alternative historical theory unrelated to this source excerpt.`;
+    // Build 3 unique context-aware distractors from sibling items with distinct fallbacks
+    const siblingDistractors = Array.from(
+      new Set(allInterpretations.filter((interp) => interp !== interpretation))
+    );
+    const fallbackDistractors = [
+      'Opposite assertion: The contrary condition holds true in this system.',
+      'Extraneous assumption not documented anywhere in your provided notes.',
+      'Alternative theory unrelated to the concepts presented in this source.',
+    ];
+    const distractors: string[] = [];
+    for (let k = 0; k < siblingDistractors.length && distractors.length < 3; k++) {
+      distractors.push(siblingDistractors[(idx + k) % siblingDistractors.length]);
+    }
+    for (const fb of fallbackDistractors) {
+      if (distractors.length >= 3) break;
+      if (!distractors.includes(fb) && fb !== interpretation) {
+        distractors.push(fb);
+      }
+    }
 
-    const quizOptions = [interpretation, d1, d2, d3];
+    const quizOptions = [interpretation, distractors[0], distractors[1], distractors[2]];
 
     // Shuffle options so correct is not always first
-    const correctIndex = (idx % 4);
+    const correctIndex = idx % 4;
     const temp = quizOptions[0];
     quizOptions[0] = quizOptions[correctIndex];
     quizOptions[correctIndex] = temp;
 
+    const cleanTag =
+      heading.length <= 24 ? heading : heading.split(/[\s-]+/).slice(0, 2).join(' ') || 'Core';
+
     const item: StudyItem = {
-      id: `item-${Date.now().toString(36)}-${idx}`,
+      id: `item-${Date.now().toString(36)}-${++idSequence}-${idx}`,
       documentId: docId,
       documentTitle: options.documentTitle,
       sourceCitation: `${heading} | ${options.fileName}`,
-      tag: heading.split(/[\s-]/)[0] || 'Core',
+      tag: cleanTag,
       category,
       title,
       sourceFact: sentence,

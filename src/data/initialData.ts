@@ -51,6 +51,21 @@ Edge locations are sites that CloudFront uses to cache copies of content closer 
 Pay-as-you-go pricing replaces upfront capital expenses with low variable operational expenses.
 To evaluate architectures: apply the six pillars of the AWS Well-Architected Framework.
 Does deploying across multiple Availability Zones guarantee zero downtime, or does fault tolerance require stateless architecture?`
+  },
+  {
+    id: 'doc-incident-prep',
+    title: 'Incident Response Runbook & Team Meeting Notes',
+    courseTopic: 'Incident Response',
+    fileName: 'Q4_Incident_Runbook_Meeting_Notes.md',
+    uploadedAt: '2026-10-16T08:15:00.000Z',
+    totalExtracted: 5,
+    approvedCount: 0,
+    rawContent: `# Incident Response Safeguards
+Kill Switch: A kill switch exists for shutting off risky behavior mid-incident before downstream queues saturate.
+To isolate a failing regional worker: disable the feature flag in the control plane and verify queue depth drops within 60 seconds.
+The audit trail system logs every manual operator override alongside the exact timestamp and operator ID.
+Why did the fallback cache fail to absorb read traffic during the peak window?
+In order to prevent silent stale data: always compare automated summary output beside the original incident log sentence.`
   }
 ];
 

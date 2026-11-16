@@ -13,7 +13,7 @@ export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({ onUnlock }
     e.preventDefault();
     const success = onUnlock(passcode);
     if (!success) {
-      setError('Incorrect passcode. Default is 1234.');
+      setError('Incorrect passcode. Please try again.');
     }
   };
 
