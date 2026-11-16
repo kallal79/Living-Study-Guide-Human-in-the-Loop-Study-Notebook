@@ -4,8 +4,10 @@ import cors from 'cors';
 import { initialNotebookState } from '../src/data/initialData';
 import { extractStudyItemsFromText } from '../src/utils/extractor';
 import { NotebookState, StudyItem } from '../src/types';
+import { handleApiRequest, readState, saveState } from '../server/apiHandler';
+import { EventEmitter } from 'events';
 
-describe('Living Study Guide Server API Endpoints', () => {
+describe('Living Study Guide Server API Endpoints & In-Process Middleware', () => {
   let app: express.Express;
   let testState: NotebookState;
 
@@ -82,7 +84,6 @@ describe('Living Study Guide Server API Endpoints', () => {
   });
 
   it('GET /api/health returns healthy status', async () => {
-    // Basic handler test
     expect(testState.notebookName).toBe('Sociology 101 Study Notebook');
   });
 
@@ -90,7 +91,6 @@ describe('Living Study Guide Server API Endpoints', () => {
     const pendingItem = testState.items.find((i) => i.status === 'pending');
     expect(pendingItem).toBeDefined();
 
-    // Directly simulate handler logic
     pendingItem!.status = 'approved';
     pendingItem!.reviewedAt = new Date().toISOString();
 
@@ -142,5 +142,32 @@ describe('Living Study Guide Server API Endpoints', () => {
     expect(items[0].status).toBe('pending');
     expect(items[0].sourceFact).toBe(raw);
   });
-});
 
+  it('handleApiRequest handles /api/health and /api/notebook in-process for Vite dev server', () => {
+    class MockReq extends EventEmitter {
+      url = '/api/health';
+      method = 'GET';
+    }
+
+    class MockRes {
+      statusCode = 200;
+      headers: Record<string, string> = {};
+      body = '';
+      setHeader(name: string, value: string) {
+        this.headers[name] = value;
+      }
+      end(chunk: string) {
+        this.body = chunk;
+      }
+    }
+
+    const req = new MockReq() as any;
+    const res = new MockRes() as any;
+
+    const handled = handleApiRequest(req, res);
+    expect(handled).toBe(true);
+    expect(res.statusCode).toBe(200);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.status).toBe('healthy');
+  });
+});

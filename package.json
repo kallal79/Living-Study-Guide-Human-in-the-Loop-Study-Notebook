@@ -4,6 +4,7 @@
   "description": "Living Study Guide: Turn your own notes into a private study guide with source-grounded flashcards, review queue, and quizzes.",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
