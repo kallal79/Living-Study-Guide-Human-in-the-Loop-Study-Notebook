@@ -14,7 +14,8 @@ export type QuizQuestionFormat =
   | 'source_evidence'
   | 'concept_recall'
   | 'quote_cloze'
-  | 'grounding_check';
+  | 'grounding_check'
+  | 'source_verify';
 
 export interface GeneratedQuizQuestion {
   id: string;

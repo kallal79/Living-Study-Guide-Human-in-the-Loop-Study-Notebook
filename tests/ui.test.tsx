@@ -269,6 +269,26 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
       expect(screen.getByText('SOURCE CLOZE')).toBeTruthy();
     });
     expect(screen.getByText('[ ? ]')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Source Verify' }));
+    await waitFor(() => {
+      expect(screen.getByText('SOURCE VERIFY')).toBeTruthy();
+    });
+  });
+
+  it('targets the chosen card first when launching Quiz directly from Library without overwriting it', async () => {
+    render(<App />);
+    await screen.findByText('Explain inequality from the source.');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Library$/i }));
+    const quizButtons = screen.getAllByTitle('Quiz on this item');
+    // Launch quiz specifically for the 2nd approved card ("Primary Socialization")
+    fireEvent.click(quizButtons[1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Source-Grounded Quick Quiz')).toBeTruthy();
+      expect(screen.getByText(/Primary Socialization/i)).toBeTruthy();
+    });
   });
 
   it('protects content behind PrivateLockScreen and unlocks with valid passcode', async () => {

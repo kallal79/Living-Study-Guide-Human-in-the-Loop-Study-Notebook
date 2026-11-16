@@ -16,6 +16,7 @@ export const FORMAT_LABELS: Record<QuizQuestionFormat, string> = {
   concept_recall: 'CONCEPT MATCH',
   quote_cloze: 'SOURCE CLOZE',
   grounding_check: 'GROUNDING CHECK',
+  source_verify: 'SOURCE VERIFY',
 };
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -68,6 +69,14 @@ function pickDistinctDistractors(
   return picked.slice(0, needed);
 }
 
+function matchCasing(word: string, template: string): string {
+  const isTitleCase = /^[A-Z]/.test(template);
+  if (isTitleCase) {
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }
+  return word.toLowerCase();
+}
+
 function extractClozeKeyword(item: StudyItem): string | null {
   const words = item.sourceFact
     .replace(/["'“”(),.;:!?]/g, ' ')
@@ -88,7 +97,6 @@ function extractClozeKeyword(item: StudyItem): string | null {
   const matchingTitleWord = words.find((w) => titleWords.has(w.toLowerCase()));
   if (matchingTitleWord) return matchingTitleWord;
 
-  // Pick a substantive word from the middle/later half of the quote
   const midIdx = Math.min(words.length - 1, Math.floor(words.length / 2));
   return words[midIdx];
 }
@@ -150,14 +158,13 @@ function buildQuestionForFormat(
         for (const sib of siblingItems) {
           const w = extractClozeKeyword(sib);
           if (w && w.toLowerCase() !== targetWord.toLowerCase()) {
-            siblingWords.push(w);
+            siblingWords.push(matchCasing(w, targetWord));
           }
         }
-        const distractors = pickDistinctDistractors(
-          targetWord,
-          siblingWords,
-          ['assumption', 'fragment', 'hypothesis']
+        const fallbacks = ['assumption', 'fragment', 'hypothesis'].map((w) =>
+          matchCasing(w, targetWord)
         );
+        const distractors = pickDistinctDistractors(targetWord, siblingWords, fallbacks);
         const { options, correctOptionIndex } = shuffleOptionsWithAnswer(
           [targetWord, ...distractors],
           0
@@ -181,25 +188,25 @@ function buildQuestionForFormat(
         };
       }
     }
-    // Fall back to source_evidence if quote had no suitable cloze token
     format = 'source_evidence';
   }
 
   if (format === 'grounding_check') {
-    const oppositeClaim = `Over-extrapolated claim: Adds unverified external causes beyond what "${item.title}" states.`;
-    const speculativeClaim = `Unchecked summary: Assumes universal exceptions not documented in this excerpt.`;
+    const cleanBase = item.studyInterpretation.replace(/\.$/, '');
+    const addedAssumption = `${cleanBase}, primarily driven by unverified historical pressures and external decrees.`;
+    const absoluteOverreach = `${cleanBase}, applying universally without exception across every recorded era.`;
     const siblingInterp =
       siblingItems.length > 0
         ? siblingItems[Math.floor(Math.random() * siblingItems.length)].studyInterpretation
-        : `Unrelated note from a different course module.`;
+        : `This mechanism replaces all prior relationships documented in the curriculum.`;
 
     const distractors = pickDistinctDistractors(
       item.studyInterpretation,
-      [oppositeClaim, speculativeClaim, siblingInterp],
+      [addedAssumption, absoluteOverreach, siblingInterp],
       [
-        'Fabricated detail not written in the original source.',
-        'Speculative footnote added without evidence.',
-        'Contradicts the verbatim quote in the notes.',
+        'A broad assumption not written in the original notes.',
+        'An extra causal explanation added beyond the text.',
+        'A conflicting summary from a separate topic.',
       ]
     );
     const { options, correctOptionIndex } = shuffleOptionsWithAnswer(
@@ -214,7 +221,7 @@ function buildQuestionForFormat(
       category: item.category,
       format: 'grounding_check',
       formatLabel: FORMAT_LABELS.grounding_check,
-      question: `Human-in-the-loop check: Which takeaway stays strictly faithful to this source quote without adding outside assumptions?`,
+      question: `Human-in-the-loop check: Which takeaway stays strictly faithful to this quote without adding outside assumptions?`,
       promptContext: `"${item.sourceFact}"`,
       options,
       correctOptionIndex,
@@ -222,6 +229,44 @@ function buildQuestionForFormat(
       sourceFact: item.sourceFact,
       sourceCitation: item.sourceCitation,
       signature: `${item.id}:grounding_check`,
+    };
+  }
+
+  if (format === 'source_verify') {
+    // Alternates whether we present the faithful claim OR an over-extrapolated claim
+    const showExtrapolated = Math.random() >= 0.5;
+    const cleanBase = item.studyInterpretation.replace(/\.$/, '');
+    const candidateClaim = showExtrapolated
+      ? `${cleanBase} exclusively because of unstated economic mandates.`
+      : item.studyInterpretation;
+
+    const verifyOptions = [
+      'Strictly supported by the source quote with no extra assumptions',
+      'Adds unverified external claims not present in the source quote',
+      'Directly contradicts the mechanism described in the notes',
+      'Refers to an unrelated topic outside this note excerpt',
+    ];
+    const correctIdx = showExtrapolated ? 1 : 0;
+    const { options, correctOptionIndex } = shuffleOptionsWithAnswer(verifyOptions, correctIdx);
+
+    return {
+      id: `${item.id}-source_verify-${attemptId}`,
+      itemId: item.id,
+      title: item.title,
+      tag: item.tag,
+      category: item.category,
+      format: 'source_verify',
+      formatLabel: FORMAT_LABELS.source_verify,
+      question: `Compare the candidate claim below against your note on "${item.title}":`,
+      promptContext: `Source: "${item.sourceFact}" — Candidate Claim: "${candidateClaim}"`,
+      options,
+      correctOptionIndex,
+      explanation: showExtrapolated
+        ? `Caution: "exclusively because of unstated economic mandates" was added and is not in your source.`
+        : `Verified: The candidate claim stays faithful to "${item.sourceFact}".`,
+      sourceFact: item.sourceFact,
+      sourceCitation: item.sourceCitation,
+      signature: `${item.id}:source_verify`,
     };
   }
 
@@ -286,12 +331,12 @@ const ALL_FORMATS: QuizQuestionFormat[] = [
   'concept_recall',
   'quote_cloze',
   'grounding_check',
+  'source_verify',
 ];
 
 /**
  * Generates a freshly varied, non-repeating set of source-grounded quiz questions.
- * Rotates question formats (`core_mcq`, `source_evidence`, `concept_recall`,
- * `quote_cloze`, `grounding_check`), shuffles item order, and shuffles A/B/C/D
+ * Rotates across 6 question formats, shuffles item order, and shuffles A/B/C/D
  * options on every invocation.
  */
 export function generateDynamicQuiz(
@@ -331,7 +376,6 @@ export function generateDynamicQuiz(
     if (options.style && options.style !== 'mixed') {
       chosenFormat = options.style;
     } else {
-      // Pick formats not yet seen in previous quiz attempts for maximum variety
       const unseenFormats = ALL_FORMATS.filter(
         (fmt) => !excludeSet.has(`${item.id}:${fmt}`)
       );

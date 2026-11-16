@@ -12,7 +12,7 @@ export const ReplitPreviewBanner: React.FC<ReplitPreviewBannerProps> = ({ onOpen
   if (!isVisible) return null;
 
   return (
-    <div className="bg-[#1E293B] text-[#E2E8F0] text-xs px-4 py-2 select-none border-b border-[#0F172A] z-30 transition-all">
+    <div className="bg-[#1E293B] text-[#E2E8F0] text-xs px-4 py-2 select-none border-b border-[#0F172A] z-30 transition-all no-print">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         {/* Banner Notice matching Image 4 */}
         <div className="flex items-center gap-2">
@@ -20,6 +20,7 @@ export const ReplitPreviewBanner: React.FC<ReplitPreviewBannerProps> = ({ onOpen
           <span className="text-[11px] text-[#94A3B8]">
             This is a temporary development preview, and these links are not for public use.{' '}
             <button
+              type="button"
               onClick={onOpenSettings}
               className="text-[#38BDF8] underline hover:text-[#7DD3FC] ml-1 font-medium inline-flex items-center gap-0.5"
             >
@@ -33,6 +34,7 @@ export const ReplitPreviewBanner: React.FC<ReplitPreviewBannerProps> = ({ onOpen
         {/* Right side verification checklist toggle & dismiss */}
         <div className="flex items-center gap-3 shrink-0">
           <button
+            type="button"
             onClick={() => setIsChecklistExpanded(!isChecklistExpanded)}
             className="flex items-center gap-1 text-[11px] text-[#CBD5E1] hover:text-white transition-colors"
           >
@@ -42,6 +44,7 @@ export const ReplitPreviewBanner: React.FC<ReplitPreviewBannerProps> = ({ onOpen
           </button>
 
           <button
+            type="button"
             onClick={() => setIsVisible(false)}
             className="text-[#94A3B8] hover:text-white p-0.5 rounded transition-colors"
             title="Dismiss development banner"

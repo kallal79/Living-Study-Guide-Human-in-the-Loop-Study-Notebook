@@ -11,6 +11,7 @@ describe('Dynamic Multi-Format Grounded Quiz Generator', () => {
       'concept_recall',
       'quote_cloze',
       'grounding_check',
+      'source_verify',
     ];
 
     for (const fmt of formats) {

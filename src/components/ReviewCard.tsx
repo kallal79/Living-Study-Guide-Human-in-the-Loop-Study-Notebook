@@ -119,29 +119,40 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             </div>
 
             {highlightGrounded ? (
-              <p className="text-sm leading-relaxed">
-                {tokens.map((tok, i) => {
-                  if (tok.isStopWord || !tok.text.trim()) {
-                    return <span key={i}>{tok.text}</span>;
-                  }
-                  if (tok.isGrounded) {
+              <div className="space-y-2">
+                <p className="text-sm leading-relaxed">
+                  {tokens.map((tok, i) => {
+                    if (tok.isStopWord || !tok.text.trim()) {
+                      return <span key={i}>{tok.text}</span>;
+                    }
+                    if (tok.isGrounded) {
+                      return (
+                        <span key={i} className="bg-[#E7F0E9] text-[#166534] rounded px-0.5">
+                          {tok.text}
+                        </span>
+                      );
+                    }
                     return (
-                      <span key={i} className="bg-[#E7F0E9] text-[#166534] rounded px-0.5">
+                      <span
+                        key={i}
+                        className="bg-[#FEF3C7] text-[#92400E] underline decoration-amber-400 font-medium rounded px-0.5"
+                        title="Word not found in source excerpt"
+                      >
                         {tok.text}
                       </span>
                     );
-                  }
-                  return (
-                    <span
-                      key={i}
-                      className="bg-[#FEF3C7] text-[#92400E] underline decoration-amber-400 font-medium rounded px-0.5"
-                      title="Word not found in source excerpt"
-                    >
-                      {tok.text}
-                    </span>
-                  );
-                })}
-              </p>
+                  })}
+                </p>
+                <div className="flex items-center justify-between text-[10px] text-[#7A7264] pt-1 border-t border-[#E2DBD0]">
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#166534]" /> In Source
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#D97706] ml-1" /> Added
+                  </span>
+                  <span className="font-mono font-semibold text-[#5A5348]">
+                    {Math.round(groundedAnalysis.groundedScore * 100)}% overlap
+                  </span>
+                </div>
+              </div>
             ) : (
               <p className="text-sm text-[#1A1815] font-normal leading-relaxed">
                 {item.studyInterpretation}

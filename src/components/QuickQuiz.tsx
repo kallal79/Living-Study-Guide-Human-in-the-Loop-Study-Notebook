@@ -31,6 +31,7 @@ const STYLE_OPTIONS: Array<{ id: QuizQuestionFormat | 'mixed'; label: string }> 
   { id: 'concept_recall', label: 'Concept Match' },
   { id: 'quote_cloze', label: 'Fill-in-Blank' },
   { id: 'grounding_check', label: 'Grounding Check' },
+  { id: 'source_verify', label: 'Source Verify' },
   { id: 'source_evidence', label: 'Source Evidence' },
 ];
 
@@ -71,6 +72,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
   const [isMissedOnlyMode, setIsMissedOnlyMode] = useState(false);
 
   const seenSignaturesRef = useRef<string[]>([]);
+  const mountedRef = useRef(false);
 
   const activeTag = tags.includes(selectedTag) ? selectedTag : 'All';
 
@@ -132,18 +134,22 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
     [approved, items, activeTag, selectedStyle, quizScope]
   );
 
-  // Initial API fetch when approved items or targetItemId change
+  // Load quiz from API on initial mount or when approved count changes (without overwriting targeted item)
   useEffect(() => {
     if (approved.length === 0) {
       setQuizDeck([]);
       return;
     }
     if (targetItemId) {
+      mountedRef.current = true;
       setSelectedTag('All');
       setQuizScope('full');
       loadFreshQuiz({ tag: 'All', scope: 'full', focusItemId: targetItemId });
       onClearTargetItem?.();
-    } else {
+      return;
+    }
+    if (!mountedRef.current) {
+      mountedRef.current = true;
       loadFreshQuiz();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -537,8 +543,8 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
 
           {/* Verbatim Ground Truth Citation Feedback */}
           {isAnswered && (
-            <div className="p-4 rounded-xl bg-[#F7EFE2] border border-[#E8DCBE] animate-fade-in text-xs leading-relaxed text-[#2C2824] mb-6">
-              <div className="flex items-center justify-between gap-2 font-bold uppercase tracking-wider text-[#9A3412] mb-1">
+            <div className="p-4 rounded-xl bg-[#F7EFE2] border border-[#E8DCBE] animate-fade-in text-xs leading-relaxed text-[#2C2824] mb-6 space-y-1.5">
+              <div className="flex items-center justify-between gap-2 font-bold uppercase tracking-wider text-[#9A3412]">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Verified From Source Notes:</span>
@@ -547,6 +553,9 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
                   {currentQ.sourceCitation}
                 </span>
               </div>
+              {currentQ.format === 'source_verify' && currentQ.explanation && (
+                <p className="text-[#1A1815] font-medium">{currentQ.explanation}</p>
+              )}
               <p className="italic font-serif">&ldquo;{currentQ.sourceFact}&rdquo;</p>
             </div>
           )}

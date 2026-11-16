@@ -55,18 +55,26 @@ export async function loadNotebookState(): Promise<NotebookState> {
   return structuredClone(initialNotebookState);
 }
 
+let saveQueue: Promise<void> = Promise.resolve();
+
 export async function saveNotebookState(state: NotebookState): Promise<void> {
   safeSetLocalStorage(LOCAL_STORAGE_KEY, JSON.stringify(state));
 
-  try {
-    await fetch('/api/notebook', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state),
+  saveQueue = saveQueue
+    .catch(() => undefined)
+    .then(async () => {
+      try {
+        await fetch('/api/notebook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state),
+        });
+      } catch {
+        // Offline or backend unavailable, local persistence is already guaranteed
+      }
     });
-  } catch {
-    // Offline or backend unavailable, local persistence is already guaranteed
-  }
+
+  return saveQueue;
 }
 
 /**

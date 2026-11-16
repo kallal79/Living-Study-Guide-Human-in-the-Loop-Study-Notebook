@@ -45,6 +45,24 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
 
   const activeTag = tags.includes(selectedTag) ? selectedTag : 'All';
 
+  const dueCount = useMemo(
+    () =>
+      approvedItems.filter(
+        (i) => (activeTag === 'All' || i.tag === activeTag) && (i.flashcard.leitnerBox || 1) <= 2
+      ).length,
+    [approvedItems, activeTag]
+  );
+
+  const masteredCount = useMemo(
+    () =>
+      approvedItems.filter(
+        (i) => (activeTag === 'All' || i.tag === activeTag) && (i.flashcard.leitnerBox || 1) >= 3
+      ).length,
+    [approvedItems, activeTag]
+  );
+
+  const totalTagCount = dueCount + masteredCount;
+
   const deck = useMemo(() => {
     return approvedItems.filter((i) => {
       const matchesTag = activeTag === 'All' || i.tag === activeTag;
@@ -197,11 +215,11 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px]">
+          <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
             {[
-              { id: 'all', label: 'All Boxes' },
-              { id: 'due', label: 'Box 1-2 (Needs Focus)' },
-              { id: 'mastered', label: 'Box 3-5 (Strong)' },
+              { id: 'all', label: `All Boxes (${totalTagCount})` },
+              { id: 'due', label: `Box 1-2 (${dueCount})` },
+              { id: 'mastered', label: `Box 3-5 (${masteredCount})` },
             ].map((b) => (
               <button
                 type="button"

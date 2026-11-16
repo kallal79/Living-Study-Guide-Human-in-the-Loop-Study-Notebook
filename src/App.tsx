@@ -57,6 +57,20 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Global Escape handler to close top-level modals cleanly
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isUploaderOpen) setIsUploaderOpen(false);
+        else if (isSettingsOpen) setIsSettingsOpen(false);
+        else if (isMissionFlowOpen) setIsMissionFlowOpen(false);
+        else if (isMobileNavOpen) setIsMobileNavOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isUploaderOpen, isSettingsOpen, isMissionFlowOpen, isMobileNavOpen]);
+
   // Save changes to storage whenever state updates
   const updateState = (updater: (prev: NotebookState) => NotebookState) => {
     setState((prev) => {
