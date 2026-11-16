@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialNotebookState } from '../src/data/initialData';
+import { initialNotebookState, awsNotebookState, sociologyNotebookState } from '../src/data/initialData';
 import { NotebookState, StudyItem } from '../src/types';
 
 describe('Living Study Guide Human-In-The-Loop Workflow', () => {
@@ -105,5 +105,17 @@ describe('Living Study Guide Human-In-The-Loop Workflow', () => {
     expect(checkPasscode('wrong')).toBe(false);
     expect(checkPasscode('1234')).toBe(true);
   });
-});
 
+  it('supports switching to AWS Module 1 dataset (matching learner showcase Image 1)', () => {
+    expect(awsNotebookState.notebookName).toContain('AWS Module 1');
+    expect(awsNotebookState.items.length).toBe(15);
+
+    const clientItem = awsNotebookState.items.find((i) => i.title === 'Client');
+    expect(clientItem).toBeDefined();
+    expect(clientItem?.sourceFact).toContain('In computing, a client can be a web browser');
+
+    const serverItem = awsNotebookState.items.find((i) => i.title === 'Server');
+    expect(serverItem).toBeDefined();
+    expect(serverItem?.sourceFact).toContain('Amazon Elastic Compute Cloud');
+  });
+});

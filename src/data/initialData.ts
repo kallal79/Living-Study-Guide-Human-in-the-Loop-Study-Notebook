@@ -30,22 +30,32 @@ Intersectionality examines how interlocking systems of oppression and privilege 
   },
   {
     id: 'doc-aws-mod1',
-    title: 'AWS Cloud Practitioner - Module 1: Cloud Concepts',
+    title: 'Quiet Study Notebook — AWS Module 1',
     courseTopic: 'AWS Cloud Practitioner',
     fileName: 'AWS_Module_1_Cloud_Concepts.txt',
     uploadedAt: '2026-10-15T10:30:00.000Z',
-    totalExtracted: 12,
-    approvedCount: 0,
-    rawContent: `AWS Module 1: Introduction to Amazon Web Services
+    totalExtracted: 15,
+    approvedCount: 5,
+    rawContent: `Module 1 - Introduction to Amazon Web Services
 In computing, a client can be a web browser or desktop application that a person interacts with to make requests to computer servers.
 A server can be services such as Amazon Elastic Compute Cloud (Amazon EC2), a type of virtual server.
 Cloud computing is the on-demand delivery of IT resources over the internet with pay-as-you-go pricing.
-The AWS Shared Responsibility Model divides security obligations: AWS is responsible for security OF the cloud, while the customer is responsible for security IN the cloud.`
+The AWS Shared Responsibility Model divides security obligations: AWS is responsible for security OF the cloud, while the customer is responsible for security IN the cloud.
+An AWS Region is a physical location in the world with multiple Availability Zones, each consisting of one or more discrete data centers.
+Amazon Simple Storage Service (S3) is an object storage service offering industry-leading scalability, data availability, security, and performance.
+Elastic Load Balancing automatically distributes incoming application traffic across multiple targets, such as EC2 instances.
+Auto Scaling monitors your applications and automatically adjusts capacity to maintain steady, predictable performance.
+AWS Identity and Access Management (IAM) controls authentication and authorization for who can access specific AWS resources.
+Amazon Relational Database Service (RDS) makes it easy to set up, operate, and scale a relational database with automated backups.
+Edge locations are sites that CloudFront uses to cache copies of content closer to end users for lower latency.
+Pay-as-you-go pricing replaces upfront capital expenses with low variable operational expenses.
+To evaluate architectures: apply the six pillars of the AWS Well-Architected Framework.
+Does deploying across multiple Availability Zones guarantee zero downtime, or does fault tolerance require stateless architecture?`
   }
 ];
 
-export const initialItems: StudyItem[] = [
-  // ---------------- APPROVED ITEMS (In Library - 8 items) ----------------
+export const sociologyItems: StudyItem[] = [
+  // ---------------- APPROVED ITEMS (In Library - 8 items matching Screenshot 4) ----------------
   {
     id: 'soc-app-1',
     documentId: 'doc-soc-101',
@@ -319,8 +329,7 @@ export const initialItems: StudyItem[] = [
     }
   },
 
-  // ---------------- PENDING ITEMS (In Review Queue - 13 items) ----------------
-  // Exactly matching Screenshot 5 and 3!
+  // ---------------- PENDING ITEMS (In Review Queue - 13 items matching Screenshot 5) ----------------
   {
     id: 'soc-pen-1',
     documentId: 'doc-soc-101',
@@ -752,27 +761,556 @@ export const initialItems: StudyItem[] = [
   }
 ];
 
-export const initialSessions: NotebookState['sessions'] = [
+// ---------------- AWS MODULE 1 NOTEBOOK DATA (Matching Image 1) ----------------
+export const awsItems: StudyItem[] = [
   {
-    id: 'session-1',
-    date: '2026-10-14T11:00:00.000Z',
-    durationMinutes: 20,
-    itemsReviewed: 8,
-    quizScore: 5,
-    quizTotal: 5,
-    notes: 'Mastered Socialization foundations and initial stratification definitions.'
+    id: 'aws-app-1',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 1 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Cloud Concepts',
+    category: 'CONCEPT',
+    title: 'Client',
+    sourceFact: "In computing, a client can be a web browser or desktop application that a person interacts with to make requests to computer servers.",
+    studyInterpretation: "An application or web browser used by people to initiate requests to server infrastructure.",
+    status: 'approved',
+    userEdited: false,
+    originalInterpretation: "An application or web browser used by people to initiate requests to server infrastructure.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    reviewedAt: '2026-10-15T11:00:00.000Z',
+    flashcard: {
+      front: "In computing, what is a client?",
+      back: "A web browser or desktop application a person interacts with to make requests to servers.",
+      leitnerBox: 3,
+      reviewCount: 4,
+      correctCount: 4
+    },
+    quizQuestion: {
+      question: "How is a 'client' defined in the AWS module?",
+      options: [
+        "A physical server rack located in a private datacenter",
+        "A web browser or desktop application that makes requests to computer servers",
+        "An internal database storage volume",
+        "A fiber optic undersea communication cable"
+      ],
+      correctOptionIndex: 1,
+      explanation: "Source Fact: In computing, a client can be a web browser or desktop application that a person interacts with to make requests to computer servers."
+    }
+  },
+  {
+    id: 'aws-app-2',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 1 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Cloud Concepts',
+    category: 'SYSTEM',
+    title: 'Server',
+    sourceFact: "A server can be services such as Amazon Elastic Compute Cloud (Amazon EC2), a type of virtual server.",
+    studyInterpretation: "Compute infrastructure (like Amazon EC2) that processes and responds to client requests.",
+    status: 'approved',
+    userEdited: false,
+    originalInterpretation: "Compute infrastructure (like Amazon EC2) that processes and responds to client requests.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    reviewedAt: '2026-10-15T11:02:00.000Z',
+    flashcard: {
+      front: "What is an AWS example of a server cited in the notes?",
+      back: "Amazon Elastic Compute Cloud (Amazon EC2), which provides virtual server capacity.",
+      leitnerBox: 3,
+      reviewCount: 3,
+      correctCount: 3
+    },
+    quizQuestion: {
+      question: "Which AWS service is specifically cited as a type of virtual server?",
+      options: [
+        "Amazon EC2 (Elastic Compute Cloud)",
+        "Amazon Route 53 DNS",
+        "AWS CloudTrail Audit Log",
+        "AWS Snowball Edge Device"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: A server can be services such as Amazon Elastic Compute Cloud (Amazon EC2), a type of virtual server."
+    }
+  },
+  {
+    id: 'aws-app-3',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 2 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Cloud Concepts',
+    category: 'CONCEPT',
+    title: 'Cloud Computing Definition',
+    sourceFact: "Cloud computing is the on-demand delivery of IT resources over the internet with pay-as-you-go pricing.",
+    studyInterpretation: "Provisioning compute, storage, and databases over the web with utility-based pay-as-you-go billing.",
+    status: 'approved',
+    userEdited: false,
+    originalInterpretation: "Provisioning compute, storage, and databases over the web with utility-based pay-as-you-go billing.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    reviewedAt: '2026-10-15T11:04:00.000Z',
+    flashcard: {
+      front: "State the official definition of cloud computing.",
+      back: "The on-demand delivery of IT resources over the internet with pay-as-you-go pricing.",
+      leitnerBox: 2,
+      reviewCount: 2,
+      correctCount: 2
+    },
+    quizQuestion: {
+      question: "What is cloud computing according to the source?",
+      options: [
+        "Purchasing permanent hardware servers for private office basements",
+        "The on-demand delivery of IT resources over the internet with pay-as-you-go pricing",
+        "A physical storage warehouse for decommissioned hard drives",
+        "An open-source desktop operating system"
+      ],
+      correctOptionIndex: 1,
+      explanation: "Source Fact: Cloud computing is the on-demand delivery of IT resources over the internet with pay-as-you-go pricing."
+    }
+  },
+  {
+    id: 'aws-app-4',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 3 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Security & Compliance',
+    category: 'SYSTEM',
+    title: 'Shared Responsibility Model',
+    sourceFact: "The AWS Shared Responsibility Model divides security obligations: AWS is responsible for security OF the cloud, while the customer is responsible for security IN the cloud.",
+    studyInterpretation: "AWS manages underlying hardware, facilities, and host OS; customers secure their data, access controls, and guest OS.",
+    status: 'approved',
+    userEdited: false,
+    originalInterpretation: "AWS manages underlying hardware, facilities, and host OS; customers secure their data, access controls, and guest OS.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    reviewedAt: '2026-10-15T11:06:00.000Z',
+    flashcard: {
+      front: "In the Shared Responsibility Model, what is AWS responsible for vs the customer?",
+      back: "AWS: Security OF the cloud (physical, infrastructure, hardware). Customer: Security IN the cloud (data, OS, IAM).",
+      leitnerBox: 2,
+      reviewCount: 2,
+      correctCount: 2
+    },
+    quizQuestion: {
+      question: "Under the Shared Responsibility Model, what is AWS responsible for?",
+      options: [
+        "Customer application passwords and database records",
+        "Security OF the cloud (underlying infrastructure and facilities)",
+        "Customer employee laptop antivirus updates",
+        "Writing business application source code"
+      ],
+      correctOptionIndex: 1,
+      explanation: "Source Fact: AWS is responsible for security OF the cloud, while the customer is responsible for security IN the cloud."
+    }
+  },
+  {
+    id: 'aws-app-5',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 4 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Infrastructure',
+    category: 'SYSTEM',
+    title: 'Regions and Availability Zones',
+    sourceFact: "An AWS Region is a physical location in the world with multiple Availability Zones, each consisting of one or more discrete data centers.",
+    studyInterpretation: "Regions provide geographic isolation containing redundant, physically separated Availability Zones for high availability.",
+    status: 'approved',
+    userEdited: false,
+    originalInterpretation: "Regions provide geographic isolation containing redundant, physically separated Availability Zones for high availability.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    reviewedAt: '2026-10-15T11:08:00.000Z',
+    flashcard: {
+      front: "What constitutes an AWS Availability Zone (AZ)?",
+      back: "One or more discrete physical data centers with redundant power and networking within a Region.",
+      leitnerBox: 2,
+      reviewCount: 2,
+      correctCount: 2
+    },
+    quizQuestion: {
+      question: "What is an AWS Region composed of?",
+      options: [
+        "A single server rack in a shared office room",
+        "Multiple Availability Zones, each containing discrete data centers",
+        "A virtual private network cable only",
+        "A software package installed on a developer laptop"
+      ],
+      correctOptionIndex: 1,
+      explanation: "Source Fact: An AWS Region is a physical location with multiple Availability Zones, each consisting of one or more discrete data centers."
+    }
+  },
+
+  // --- AWS Pending Items in Review Queue (10 items) ---
+  {
+    id: 'aws-pen-1',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 4 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Storage',
+    category: 'SYSTEM',
+    title: 'Amazon S3 Object Storage',
+    sourceFact: "Amazon Simple Storage Service (S3) is an object storage service offering industry-leading scalability, data availability, security, and performance.",
+    studyInterpretation: "Highly scalable object store designed for storing and retrieving any amount of data from anywhere.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Highly scalable object store designed for storing and retrieving any amount of data from anywhere.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "What type of storage service is Amazon S3?",
+      back: "An object storage service offering scalability, data availability, security, and performance.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What storage model does Amazon S3 use?",
+      options: [
+        "Object storage",
+        "Block-level raw disk array only",
+        "Tape cassette archive",
+        "Relational table store"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Amazon Simple Storage Service (S3) is an object storage service."
+    }
+  },
+  {
+    id: 'aws-pen-2',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 5 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Networking',
+    category: 'PROCESS',
+    title: 'Elastic Load Balancing',
+    sourceFact: "Elastic Load Balancing automatically distributes incoming application traffic across multiple targets, such as EC2 instances.",
+    studyInterpretation: "Routes incoming traffic evenly to prevent individual instance saturation and increase fault tolerance.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Routes incoming traffic evenly to prevent individual instance saturation and increase fault tolerance.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "What is the primary role of Elastic Load Balancing (ELB)?",
+      back: "Distributing incoming traffic across multiple targets (like EC2 instances) to ensure seamless availability.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What does Elastic Load Balancing do?",
+      options: [
+        "Prints physical invoices to customer addresses",
+        "Automatically distributes incoming application traffic across multiple targets like EC2 instances",
+        "Shuts down all servers at 5:00 PM daily",
+        "Increases monthly server rental prices"
+      ],
+      correctOptionIndex: 1,
+      explanation: "Source Fact: Elastic Load Balancing automatically distributes incoming application traffic across multiple targets, such as EC2 instances."
+    }
+  },
+  {
+    id: 'aws-pen-3',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 5 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Compute',
+    category: 'PROCESS',
+    title: 'AWS Auto Scaling',
+    sourceFact: "Auto Scaling monitors your applications and automatically adjusts capacity to maintain steady, predictable performance.",
+    studyInterpretation: "Dynamically expands or contracts server fleets matching live demand to optimize cost and performance.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Dynamically expands or contracts server fleets matching live demand to optimize cost and performance.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "Why use AWS Auto Scaling?",
+      back: "To automatically adjust instance capacity up or down based on traffic, preserving performance while minimizing costs.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What does Auto Scaling adjust automatically?",
+      options: [
+        "Application instance capacity to maintain steady performance",
+        "The font size of the AWS documentation",
+        "Employee office cubicle layouts",
+        "Credit card expiration dates"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Auto Scaling monitors your applications and automatically adjusts capacity to maintain steady performance."
+    }
+  },
+  {
+    id: 'aws-pen-4',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 6 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Security & Compliance',
+    category: 'HOW-TO',
+    title: 'How to Manage Access with IAM',
+    sourceFact: "AWS Identity and Access Management (IAM) controls authentication and authorization for who can access specific AWS resources.",
+    studyInterpretation: "Define granular IAM users, roles, and policies to govern identity authentication and resource permissions.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Define granular IAM users, roles, and policies to govern identity authentication and resource permissions.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "What does AWS IAM control?",
+      back: "Authentication (who you are) and authorization (what permissions you have) across AWS services.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "Which AWS service controls authentication and authorization for cloud resources?",
+      options: [
+        "AWS IAM (Identity and Access Management)",
+        "Amazon QuickSight",
+        "AWS Glacier",
+        "Amazon Polly"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: AWS Identity and Access Management (IAM) controls authentication and authorization for who can access specific AWS resources."
+    }
+  },
+  {
+    id: 'aws-pen-5',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 7 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Database',
+    category: 'SYSTEM',
+    title: 'Amazon RDS Managed Databases',
+    sourceFact: "Amazon Relational Database Service (RDS) makes it easy to set up, operate, and scale a relational database with automated backups.",
+    studyInterpretation: "Cloud-managed relational database engines with automatic patching, scaling, and recovery.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Cloud-managed relational database engines with automatic patching, scaling, and recovery.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "What does Amazon RDS provide?",
+      back: "Managed relational database deployment (PostgreSQL, MySQL, etc.) with automated backups and maintenance.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What convenience does Amazon RDS automate?",
+      options: [
+        "Automated backups, operation, and scaling of relational databases",
+        "Writing business sales pitches",
+        "Designing website logos",
+        "Mailing physical hardware to users"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Amazon Relational Database Service (RDS) makes it easy to set up, operate, and scale a relational database with automated backups."
+    }
+  },
+  {
+    id: 'aws-pen-6',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 8 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Networking',
+    category: 'SYSTEM',
+    title: 'Edge Locations & CloudFront',
+    sourceFact: "Edge locations are sites that CloudFront uses to cache copies of content closer to end users for lower latency.",
+    studyInterpretation: "Global edge points of presence caching static and dynamic data closer to users to reduce response lag.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Global edge points of presence caching static and dynamic data closer to users to reduce response lag.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "What is an AWS Edge Location used for?",
+      back: "Caching content via CloudFront CDN closer to end users to deliver lower latency.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "Why does CloudFront use Edge Locations?",
+      options: [
+        "To cache content closer to end users to decrease latency",
+        "To mine cryptocurrency during off-peak hours",
+        "To store physical paper documents",
+        "To replace all human network engineers"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Edge locations are sites that CloudFront uses to cache copies of content closer to end users for lower latency."
+    }
+  },
+  {
+    id: 'aws-pen-7',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 9 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Economics',
+    category: 'CONCEPT',
+    title: 'Pay-As-You-Go Economics',
+    sourceFact: "Pay-as-you-go pricing replaces upfront capital expenses with low variable operational expenses.",
+    studyInterpretation: "Trade capital expenditures (CapEx) for variable operating expenditures (OpEx), paying only for consumed resources.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Trade capital expenditures (CapEx) for variable operating expenditures (OpEx), paying only for consumed resources.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "How does pay-as-you-go pricing shift financial expense models?",
+      back: "Replaces fixed upfront capital expense (CapEx) with variable operational expense (OpEx).",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What financial shift does pay-as-you-go pricing provide?",
+      options: [
+        "Replacing upfront capital expenses with variable operational expenses",
+        "Requiring 10-year non-refundable prepayments",
+        "Eliminating all accounting audits",
+        "Increasing fixed datacenter construction debt"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Pay-as-you-go pricing replaces upfront capital expenses with low variable operational expenses."
+    }
+  },
+  {
+    id: 'aws-pen-8',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 10 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Architecture',
+    category: 'HOW-TO',
+    title: 'Applying the Well-Architected Framework',
+    sourceFact: "To evaluate architectures: apply the six pillars of the AWS Well-Architected Framework.",
+    studyInterpretation: "Review cloud systems against: Operational Excellence, Security, Reliability, Performance, Cost, and Sustainability.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "Review cloud systems against: Operational Excellence, Security, Reliability, Performance, Cost, and Sustainability.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "How do you evaluate cloud architecture according to AWS best practices?",
+      back: "Apply the six pillars of the AWS Well-Architected Framework.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What framework is used to evaluate AWS cloud architectures?",
+      options: [
+        "AWS Well-Architected Framework",
+        "ISO 9000 Paper Guideline",
+        "Waterfall Planning Diagram",
+        "Ad-hoc Trial and Error"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: To evaluate architectures: apply the six pillars of the AWS Well-Architected Framework."
+    }
+  },
+  {
+    id: 'aws-pen-9',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 11 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Architecture',
+    category: 'QUESTION',
+    title: 'Multi-AZ High Availability vs Fault Tolerance',
+    sourceFact: "Does deploying across multiple Availability Zones guarantee zero downtime, or does fault tolerance require stateless architecture?",
+    studyInterpretation: "High availability reduces single points of failure, but true fault tolerance requires application-level stateless resilience.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "High availability reduces single points of failure, but true fault tolerance requires application-level stateless resilience.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "Does Multi-AZ deployment alone guarantee fault tolerance?",
+      back: "No. Multi-AZ provides high availability, but applications must be architected statelessly to withstand unexpected failures.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What question is explored regarding multi-AZ deployment?",
+      options: [
+        "Whether multi-AZ deployment guarantees zero downtime or requires stateless architectural design",
+        "Whether cloud computing is slower than dial-up internet",
+        "Whether AWS instances consume physical water",
+        "Whether all cables should be unplugged during rain"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Does deploying across multiple Availability Zones guarantee zero downtime, or does fault tolerance require stateless architecture?"
+    }
+  },
+  {
+    id: 'aws-pen-10',
+    documentId: 'doc-aws-mod1',
+    documentTitle: 'Quiet Study Notebook — AWS Module 1',
+    sourceCitation: 'Source PDF - page 12 | AWS_Module_1_Cloud_Concepts.txt',
+    tag: 'Compute',
+    category: 'KEY TERM',
+    title: 'Amazon EC2 Instance Types',
+    sourceFact: "A server can be services such as Amazon Elastic Compute Cloud (Amazon EC2), offering optimized CPU, memory, and storage configurations.",
+    studyInterpretation: "EC2 provides various instance families tailored for general compute, memory-intensive, or compute-optimized workloads.",
+    status: 'pending',
+    userEdited: false,
+    originalInterpretation: "EC2 provides various instance families tailored for general compute, memory-intensive, or compute-optimized workloads.",
+    createdAt: '2026-10-15T10:30:00.000Z',
+    flashcard: {
+      front: "What do Amazon EC2 instance families offer?",
+      back: "Varying combinations of CPU, memory, storage, and networking capacity for workload optimization.",
+      leitnerBox: 1,
+      reviewCount: 0,
+      correctCount: 0
+    },
+    quizQuestion: {
+      question: "What configurations do EC2 instances optimize?",
+      options: [
+        "CPU, memory, storage, and networking performance",
+        "Physical paint colors of the server cases",
+        "Office furniture ergonomics",
+        "Coffee machine brewing speed"
+      ],
+      correctOptionIndex: 0,
+      explanation: "Source Fact: Amazon Elastic Compute Cloud (Amazon EC2) offers optimized CPU, memory, and storage configurations."
+    }
   }
 ];
 
-export const initialNotebookState: NotebookState = {
+export const sociologyNotebookState: NotebookState = {
   notebookName: 'Sociology 101 Study Notebook',
   activeTopic: 'Socialization & Stratification',
   studyGoal: 'exam_review',
   isLocked: false,
   passcode: '1234',
-  items: initialItems,
-  documents: initialDocuments,
-  sessions: initialSessions,
+  items: sociologyItems,
+  documents: [initialDocuments[0]],
+  sessions: [
+    {
+      id: 'session-1',
+      date: '2026-10-14T11:00:00.000Z',
+      durationMinutes: 20,
+      itemsReviewed: 8,
+      quizScore: 5,
+      quizTotal: 5,
+      notes: 'Mastered Socialization foundations and initial stratification definitions.'
+    }
+  ],
   lastBackupDate: undefined
 };
 
+export const awsNotebookState: NotebookState = {
+  notebookName: 'Quiet Study Notebook — AWS Module 1',
+  activeTopic: 'AWS Cloud Practitioner',
+  studyGoal: 'concept_recall',
+  isLocked: false,
+  passcode: '1234',
+  items: awsItems,
+  documents: [initialDocuments[1]],
+  sessions: [
+    {
+      id: 'session-aws-1',
+      date: '2026-10-15T11:30:00.000Z',
+      durationMinutes: 15,
+      itemsReviewed: 5,
+      quizScore: 5,
+      quizTotal: 5,
+      notes: 'Reviewed Core AWS cloud concepts, clients, servers, and Shared Responsibility Model.'
+    }
+  ],
+  lastBackupDate: undefined
+};
+
+export const initialItems = sociologyItems;
+export const initialSessions = sociologyNotebookState.sessions;
+export const initialNotebookState = sociologyNotebookState;

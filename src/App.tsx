@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NotebookState, StudyItem, SourceDocument, StudySessionLog } from './types';
-import { initialNotebookState } from './data/initialData';
+import { initialNotebookState, sociologyNotebookState, awsNotebookState } from './data/initialData';
 import { loadNotebookState, saveNotebookState, downloadBackup } from './utils/storage';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -14,7 +14,8 @@ import { UnderstandingDashboard } from './components/UnderstandingDashboard';
 import { DocumentUploader } from './components/DocumentUploader';
 import { SettingsModal } from './components/SettingsModal';
 import { PrivateLockScreen } from './components/PrivateLockScreen';
-import { extractStudyItemsFromText } from './utils/extractor';
+import { ReplitPreviewBanner } from './components/ReplitPreviewBanner';
+import { MissionFlowModal } from './components/MissionFlowModal';
 
 export const App: React.FC = () => {
   const [state, setState] = useState<NotebookState>(initialNotebookState);
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
   const [isUnlocked, setIsUnlocked] = useState<boolean>(true);
   const [isUploaderOpen, setIsUploaderOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isMissionFlowOpen, setIsMissionFlowOpen] = useState<boolean>(false);
   const [targetItemId, setTargetItemId] = useState<string | null>(null);
 
   // Initialize and load saved state
@@ -184,27 +186,11 @@ export const App: React.FC = () => {
     }));
   };
 
-  const handleResetToDemo = (mode: 'sociology' | 'aws') => {
-    if (mode === 'sociology') {
-      updateState(() => initialNotebookState);
+  const handleSwitchNotebookPreset = (preset: 'sociology' | 'aws') => {
+    if (preset === 'sociology') {
+      updateState(() => sociologyNotebookState);
     } else {
-      const awsDoc = initialNotebookState.documents.find((d) => d.id === 'doc-aws-mod1');
-      if (awsDoc) {
-        const awsItems = extractStudyItemsFromText(awsDoc.rawContent, {
-          documentTitle: awsDoc.title,
-          courseTopic: awsDoc.courseTopic,
-          fileName: awsDoc.fileName,
-          studyGoal: 'concept_recall',
-        });
-        updateState((prev) => ({
-          ...prev,
-          notebookName: 'Quiet Study Notebook — AWS Module 1',
-          activeTopic: 'Introduction to Amazon Web Services',
-          studyGoal: 'concept_recall',
-          items: awsItems,
-          documents: [awsDoc],
-        }));
-      }
+      updateState(() => awsNotebookState);
     }
   };
 
@@ -227,100 +213,107 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FBF9F5] text-[#1A1815]">
-      {/* Left Sidebar matching Screenshots */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        state={state}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenUploader={() => setIsUploaderOpen(true)}
-      />
+    <div className="flex flex-col min-h-screen bg-[#FBF9F5] text-[#1A1815]">
+      {/* Replit Dev Preview Banner matching Image 4 */}
+      <ReplitPreviewBanner onOpenSettings={() => setIsSettingsOpen(true)} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        {/* Top Header */}
-        <Header
+      <div className="flex flex-1">
+        {/* Left Sidebar matching Screenshots */}
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           state={state}
-          onLockNotebook={handleLockNotebook}
-          onExportBackup={() => downloadBackup(state)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenUploader={() => setIsUploaderOpen(true)}
+          onOpenMissionFlow={() => setIsMissionFlowOpen(true)}
+          onSwitchNotebookPreset={handleSwitchNotebookPreset}
         />
 
-        {/* Dynamic Route Content */}
-        <main className="flex-1 pb-16">
-          {activeTab === 'overview' && (
-            <Overview
-              state={state}
-              setActiveTab={setActiveTab}
-              onOpenUploader={() => setIsUploaderOpen(true)}
-            />
-          )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+          {/* Top Header */}
+          <Header
+            state={state}
+            onLockNotebook={handleLockNotebook}
+            onExportBackup={() => downloadBackup(state)}
+          />
 
-          {activeTab === 'review' && (
-            <ReviewQueue
-              items={state.items}
-              onApproveItem={handleApproveItem}
-              onDiscardItem={handleDiscardItem}
-              onUpdateItem={handleUpdateItem}
-              onMergeItems={handleMergeItems}
-              onOpenUploader={() => setIsUploaderOpen(true)}
-              setActiveTab={setActiveTab}
-            />
-          )}
+          {/* Dynamic Route Content */}
+          <main className="flex-1 pb-16">
+            {activeTab === 'overview' && (
+              <Overview
+                state={state}
+                setActiveTab={setActiveTab}
+                onOpenUploader={() => setIsUploaderOpen(true)}
+              />
+            )}
 
-          {activeTab === 'library' && (
-            <Library
-              items={state.items}
-              notebookName={state.notebookName}
-              onUpdateItem={(up) => handleUpdateItem(up)}
-              onDeleteItem={handleDeleteItem}
-              onStartQuizWithItem={(item) => {
-                setTargetItemId(item.id);
-                setActiveTab('quiz');
-              }}
-              onFlipCardWithItem={(item) => {
-                setTargetItemId(item.id);
-                setActiveTab('flashcards');
-              }}
-            />
-          )}
+            {activeTab === 'review' && (
+              <ReviewQueue
+                items={state.items}
+                onApproveItem={handleApproveItem}
+                onDiscardItem={handleDiscardItem}
+                onUpdateItem={handleUpdateItem}
+                onMergeItems={handleMergeItems}
+                onOpenUploader={() => setIsUploaderOpen(true)}
+                setActiveTab={setActiveTab}
+              />
+            )}
 
-          {activeTab === 'flashcards' && (
-            <Flashcards
-              items={state.items}
-              onUpdateItemProgress={handleUpdateItemProgress}
-              targetItemId={targetItemId}
-              onClearTargetItem={() => setTargetItemId(null)}
-            />
-          )}
+            {activeTab === 'library' && (
+              <Library
+                items={state.items}
+                notebookName={state.notebookName}
+                onUpdateItem={(up) => handleUpdateItem(up)}
+                onDeleteItem={handleDeleteItem}
+                onStartQuizWithItem={(item) => {
+                  setTargetItemId(item.id);
+                  setActiveTab('quiz');
+                }}
+                onFlipCardWithItem={(item) => {
+                  setTargetItemId(item.id);
+                  setActiveTab('flashcards');
+                }}
+              />
+            )}
 
-          {activeTab === 'quiz' && (
-            <QuickQuiz
-              items={state.items}
-              targetItemId={targetItemId}
-              onClearTargetItem={() => setTargetItemId(null)}
-              onRecordQuizResult={handleRecordQuizResult}
-            />
-          )}
+            {activeTab === 'flashcards' && (
+              <Flashcards
+                items={state.items}
+                onUpdateItemProgress={handleUpdateItemProgress}
+                targetItemId={targetItemId}
+                onClearTargetItem={() => setTargetItemId(null)}
+              />
+            )}
 
-          {activeTab === 'session' && (
-            <StudySession
-              state={state}
-              onRecordSession={handleRecordSession}
-              setActiveTab={setActiveTab}
-            />
-          )}
+            {activeTab === 'quiz' && (
+              <QuickQuiz
+                items={state.items}
+                targetItemId={targetItemId}
+                onClearTargetItem={() => setTargetItemId(null)}
+                onRecordQuizResult={handleRecordQuizResult}
+              />
+            )}
 
-          {activeTab === 'understanding' && (
-            <UnderstandingDashboard
-              state={state}
-              setActiveTab={setActiveTab}
-            />
-          )}
-        </main>
+            {activeTab === 'session' && (
+              <StudySession
+                state={state}
+                onRecordSession={handleRecordSession}
+                setActiveTab={setActiveTab}
+              />
+            )}
+
+            {activeTab === 'understanding' && (
+              <UnderstandingDashboard
+                state={state}
+                setActiveTab={setActiveTab}
+              />
+            )}
+          </main>
+        </div>
       </div>
 
-      {/* Ingestion & Settings Modals */}
+      {/* Ingestion, Settings & Mission Flow Modals */}
       <DocumentUploader
         isOpen={isUploaderOpen}
         onClose={() => setIsUploaderOpen(false)}
@@ -333,9 +326,13 @@ export const App: React.FC = () => {
         state={state}
         onUpdateSettings={(updates) => updateState((prev) => ({ ...prev, ...updates }))}
         onRestoreState={(restored) => setState(restored)}
-        onResetToDemo={handleResetToDemo}
+        onResetToDemo={(mode) => handleSwitchNotebookPreset(mode)}
+      />
+
+      <MissionFlowModal
+        isOpen={isMissionFlowOpen}
+        onClose={() => setIsMissionFlowOpen(false)}
       />
     </div>
   );
 };
-

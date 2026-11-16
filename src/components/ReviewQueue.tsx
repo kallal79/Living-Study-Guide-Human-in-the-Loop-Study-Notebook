@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, GitMerge, Check, Trash2, Filter, Keyboard, HelpCircle } from 'lucide-react';
-import { StudyItem } from '../types';
+import { CheckSquare, GitMerge, Check, Trash2, Filter, Keyboard, HelpCircle, Layers, Tag } from 'lucide-react';
+import { StudyItem, ItemCategory } from '../types';
 import { ReviewCard } from './ReviewCard';
 import { EditModal } from './EditModal';
 import { MergeModal } from './MergeModal';
@@ -29,22 +29,34 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   const pendingItems = items.filter((i) => i.status === 'pending');
 
   const [selectedTag, setSelectedTag] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
-  // Extract unique tags from pending items
+  // Extract unique tags and categories from pending items
   const tags = ['All', ...Array.from(new Set(pendingItems.map((i) => i.tag)))];
+  const categories: Array<string> = [
+    'All',
+    'CONCEPT',
+    'LECTURE CLAIM',
+    'KEY TERM',
+    'SYSTEM',
+    'PROCESS',
+    'HOW-TO',
+    'QUESTION',
+  ];
 
-  const filteredItems = selectedTag === 'All'
-    ? pendingItems
-    : pendingItems.filter((i) => i.tag === selectedTag);
+  const filteredItems = pendingItems.filter((item) => {
+    const matchesTag = selectedTag === 'All' || item.tag === selectedTag;
+    const matchesCat = selectedCategory === 'All' || item.category === selectedCategory;
+    return matchesTag && matchesCat;
+  });
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if typing in an input/textarea or modal is open
       if (
         editingItem ||
         isMergeModalOpen ||
@@ -131,60 +143,87 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-6">
-      {/* Filter Bar & Header matching Screenshot 5 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-[#E8E2D5]">
-        {/* Showing Filter Chips */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#8C8477] uppercase tracking-wider mr-1">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Showing:</span>
+      {/* Top Header matching Screenshot 5 & Image 1 */}
+      <div className="space-y-3 mb-6 pb-4 border-b border-[#E8E2D5]">
+        {/* Row 1: Topic Tag Chips & Action */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#8C8477] uppercase tracking-wider mr-1">
+              <Tag className="w-3.5 h-3.5" />
+              <span>Showing:</span>
+            </div>
+            {tags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(tag)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  selectedTag === tag
+                    ? 'bg-[#1A1815] text-[#FAF7F0] shadow-xs'
+                    : 'bg-[#EDE7DA] text-[#6B6355] hover:bg-[#E2DAC9]'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
-          {tags.map((tag) => (
+
+          {/* Count and Select To Merge Button */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-[#7A7264]">
+              <strong className="text-[#1A1815]">{filteredItems.length}</strong> items ready for your review
+            </span>
+
             <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                selectedTag === tag
-                  ? 'bg-[#1A1815] text-[#FAF7F0] shadow-xs'
-                  : 'bg-[#EDE7DA] text-[#6B6355] hover:bg-[#E2DAC9]'
+              onClick={() => {
+                if (selectedIds.size < 2) {
+                  const firstTwo = filteredItems.slice(0, 2).map((i) => i.id);
+                  setSelectedIds(new Set(firstTwo));
+                }
+                setIsMergeModalOpen(true);
+              }}
+              disabled={filteredItems.length < 2}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
+                filteredItems.length < 2
+                  ? 'opacity-40 cursor-not-allowed bg-[#E8E2D5] text-[#8C8477]'
+                  : 'bg-[#EAE3D2] text-[#784004] hover:bg-[#E2D8C3] border border-[#D5C9B4]'
               }`}
             >
-              {tag}
+              <GitMerge className="w-3.5 h-3.5" />
+              <span>SELECT TO MERGE</span>
             </button>
-          ))}
+          </div>
         </div>
 
-        {/* Count and Select To Merge Button */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-[#7A7264]">
-            <strong className="text-[#1A1815]">{filteredItems.length}</strong> items ready for your review
-          </span>
+        {/* Row 2: Category Filter Pills matching Image 1 (All, Concept, Term, System, Process, How-To, Question) */}
+        <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+          <span className="text-[#8C8477] font-semibold uppercase tracking-wider mr-1">Type:</span>
+          {categories.map((cat) => {
+            const count = cat === 'All' 
+              ? pendingItems.length 
+              : pendingItems.filter((i) => i.category === cat).length;
 
-          <button
-            onClick={() => {
-              if (selectedIds.size < 2) {
-                // Select first two items by default if none or one selected
-                const firstTwo = filteredItems.slice(0, 2).map((i) => i.id);
-                setSelectedIds(new Set(firstTwo));
-              }
-              setIsMergeModalOpen(true);
-            }}
-            disabled={filteredItems.length < 2}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
-              filteredItems.length < 2
-                ? 'opacity-40 cursor-not-allowed bg-[#E8E2D5] text-[#8C8477]'
-                : 'bg-[#EAE3D2] text-[#784004] hover:bg-[#E2D8C3] border border-[#D5C9B4]'
-            }`}
-          >
-            <GitMerge className="w-3.5 h-3.5" />
-            <span>SELECT TO MERGE</span>
-          </button>
+            if (cat !== 'All' && count === 0) return null;
+
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-2.5 py-0.5 rounded-lg font-medium transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-[#784004] text-white shadow-2xs font-semibold'
+                    : 'bg-[#F2ECE0] text-[#5A5348] hover:bg-[#E8DFCFC0]'
+                }`}
+              >
+                {cat === 'All' ? `All (${count})` : `${cat} (${count})`}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Keyboard Shortcuts Hint Bar */}
       <div className="mb-6 flex items-center justify-between text-[11px] text-[#7A7264] bg-[#F7F4EC] px-3.5 py-1.5 rounded-xl border border-[#E8E2D5]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="font-semibold text-[#5A5348] flex items-center gap-1">
             <Keyboard className="w-3.5 h-3.5 text-[#8C5209]" />
             Quick keys:
@@ -196,7 +235,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
         </div>
         <button
           onClick={() => setShowShortcutsModal(true)}
-          className="text-[#8C5209] hover:underline flex items-center gap-1"
+          className="text-[#8C5209] hover:underline flex items-center gap-1 shrink-0"
         >
           <HelpCircle className="w-3 h-3" />
           <span>All shortcuts [?]</span>
