@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CheckSquare, GitMerge, Check, Trash2, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckSquare, GitMerge, Check, Trash2, Filter, Keyboard, HelpCircle } from 'lucide-react';
 import { StudyItem } from '../types';
 import { ReviewCard } from './ReviewCard';
 import { EditModal } from './EditModal';
@@ -32,6 +32,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
   // Extract unique tags from pending items
   const tags = ['All', ...Array.from(new Set(pendingItems.map((i) => i.tag)))];
@@ -39,6 +40,41 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   const filteredItems = selectedTag === 'All'
     ? pendingItems
     : pendingItems.filter((i) => i.tag === selectedTag);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if typing in an input/textarea or modal is open
+      if (
+        editingItem ||
+        isMergeModalOpen ||
+        showShortcutsModal ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        return;
+      }
+
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setShowShortcutsModal((prev) => !prev);
+      } else if ((e.key === 'a' || e.key === 'A') && filteredItems.length > 0) {
+        e.preventDefault();
+        handleApprove(filteredItems[0].id);
+      } else if ((e.key === 'd' || e.key === 'D') && filteredItems.length > 0) {
+        e.preventDefault();
+        handleDiscard(filteredItems[0].id);
+      } else if ((e.key === 'e' || e.key === 'E') && filteredItems.length > 0) {
+        e.preventDefault();
+        setEditingItem(filteredItems[0]);
+      } else if ((e.key === 'm' || e.key === 'M') && selectedIds.size >= 2) {
+        e.preventDefault();
+        setIsMergeModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredItems, selectedIds, editingItem, isMergeModalOpen, showShortcutsModal]);
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -96,7 +132,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   return (
     <div className="max-w-4xl mx-auto py-8 px-6">
       {/* Filter Bar & Header matching Screenshot 5 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#E8E2D5]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-[#E8E2D5]">
         {/* Showing Filter Chips */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#8C8477] uppercase tracking-wider mr-1">
@@ -144,6 +180,27 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             <span>SELECT TO MERGE</span>
           </button>
         </div>
+      </div>
+
+      {/* Keyboard Shortcuts Hint Bar */}
+      <div className="mb-6 flex items-center justify-between text-[11px] text-[#7A7264] bg-[#F7F4EC] px-3.5 py-1.5 rounded-xl border border-[#E8E2D5]">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-[#5A5348] flex items-center gap-1">
+            <Keyboard className="w-3.5 h-3.5 text-[#8C5209]" />
+            Quick keys:
+          </span>
+          <span><kbd className="px-1.5 py-0.5 bg-[#EAE3D2] rounded text-[#2C2824] font-mono text-[10px]">A</kbd> Approve</span>
+          <span><kbd className="px-1.5 py-0.5 bg-[#EAE3D2] rounded text-[#2C2824] font-mono text-[10px]">E</kbd> Edit</span>
+          <span><kbd className="px-1.5 py-0.5 bg-[#EAE3D2] rounded text-[#2C2824] font-mono text-[10px]">D</kbd> Discard</span>
+          <span><kbd className="px-1.5 py-0.5 bg-[#EAE3D2] rounded text-[#2C2824] font-mono text-[10px]">M</kbd> Merge</span>
+        </div>
+        <button
+          onClick={() => setShowShortcutsModal(true)}
+          className="text-[#8C5209] hover:underline flex items-center gap-1"
+        >
+          <HelpCircle className="w-3 h-3" />
+          <span>All shortcuts [?]</span>
+        </button>
       </div>
 
       {/* Floating Bulk Action Bar when items selected */}
@@ -194,7 +251,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
       {/* Cards List */}
       {filteredItems.length > 0 ? (
         <div className="space-y-5">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item, idx) => (
             <ReviewCard
               key={item.id}
               item={item}
@@ -203,6 +260,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
               onApprove={handleApprove}
               onEdit={(it) => setEditingItem(it)}
               onDiscard={handleDiscard}
+              showKeyboardShortcuts={idx === 0}
             />
           ))}
         </div>
@@ -262,6 +320,62 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
           playTone('approve');
         }}
       />
+
+      {/* Keyboard Shortcuts Modal */}
+      {showShortcutsModal && (
+        <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5] mb-4">
+              <h3 className="text-base font-serif font-bold text-[#1A1815] flex items-center gap-2">
+                <Keyboard className="w-4 h-4 text-[#8C5209]" />
+                Keyboard Shortcuts Guide
+              </h3>
+              <button
+                onClick={() => setShowShortcutsModal(false)}
+                className="text-xs text-[#7A7264] hover:text-[#1A1815]"
+              >
+                Close (Esc)
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-[#5A5348]">
+              <div className="flex justify-between items-center py-1 border-b border-[#EAE4D7]">
+                <span>Approve top candidate</span>
+                <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">A</kbd>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#EAE4D7]">
+                <span>Discard top candidate</span>
+                <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">D</kbd>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#EAE4D7]">
+                <span>Edit candidate</span>
+                <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">E</kbd>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#EAE4D7]">
+                <span>Merge selected cards</span>
+                <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">M</kbd>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#EAE4D7]">
+                <span>Flip flashcard / Next</span>
+                <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">Space</kbd>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span>Select Quiz option</span>
+                <kbd className="px-2 py-0.5 bg-[#EAE3D2] font-mono rounded font-semibold text-[#1A1815]">1 - 4</kbd>
+              </div>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-[#E8E2D5] text-right">
+              <button
+                onClick={() => setShowShortcutsModal(false)}
+                className="px-4 py-1.5 bg-[#2B5738] text-white rounded-lg text-xs font-semibold"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

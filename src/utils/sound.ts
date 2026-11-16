@@ -1,5 +1,7 @@
-// Gentle, calm web audio cues for study interactions (zen, unobtrusive)
+// Gentle, calm web audio cues and ambient study sound generator (zen, unobtrusive)
 let audioCtx: AudioContext | null = null;
+let ambientSource: AudioNode | null = null;
+let ambientGain: GainNode | null = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -53,6 +55,15 @@ export const playTone = (type: 'approve' | 'flip' | 'correct' | 'wrong' | 'disca
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.start(now);
       osc.stop(now + 0.35);
+    } else if (type === 'wrong') {
+      // Gentle warning chime
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.setValueAtTime(240, now + 0.1);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
     } else if (type === 'discard') {
       // Soft low rustle
       osc.type = 'sine';
@@ -64,5 +75,82 @@ export const playTone = (type: 'approve' | 'flip' | 'correct' | 'wrong' | 'disca
     }
   } catch {
     // Ignore audio failures if browser blocks autoplay
+  }
+};
+
+/**
+ * Ambient White Noise Synthesizer (Rain, Zen Stream, Library Room)
+ * Uses Web Audio API buffer synthesis with zero external files.
+ */
+export const startAmbientSound = (type: 'rain' | 'zen' | 'library' = 'rain', volume = 0.08) => {
+  try {
+    stopAmbientSound();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const bufferSize = ctx.sampleRate * 2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      // Pink / Brown noise filter for natural soft sound
+      output[i] = (lastOut + 0.02 * white) / 1.02;
+      lastOut = output[i];
+      output[i] *= 3.5;
+    }
+
+    const whiteNoise = ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    // Filter frequency based on preset
+    const filter = ctx.createBiquadFilter();
+    if (type === 'rain') {
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(800, ctx.currentTime);
+    } else if (type === 'zen') {
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(450, ctx.currentTime);
+      filter.Q.setValueAtTime(1.5, ctx.currentTime);
+    } else {
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(350, ctx.currentTime);
+    }
+
+    ambientGain = ctx.createGain();
+    ambientGain.gain.setValueAtTime(volume, ctx.currentTime);
+
+    whiteNoise.connect(filter);
+    filter.connect(ambientGain);
+    ambientGain.connect(ctx.destination);
+
+    whiteNoise.start();
+    ambientSource = whiteNoise;
+  } catch {
+    // Graceful degradation
+  }
+};
+
+export const stopAmbientSound = () => {
+  try {
+    if (ambientSource) {
+      (ambientSource as AudioScheduledSourceNode).stop();
+      ambientSource.disconnect();
+      ambientSource = null;
+    }
+    if (ambientGain) {
+      ambientGain.disconnect();
+      ambientGain = null;
+    }
+  } catch {
+    // Ignore cleanup errors
+  }
+};
+
+export const setAmbientVolume = (vol: number) => {
+  if (ambientGain && audioCtx) {
+    ambientGain.gain.setValueAtTime(vol, audioCtx.currentTime);
   }
 };

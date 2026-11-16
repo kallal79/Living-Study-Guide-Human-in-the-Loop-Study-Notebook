@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   HelpCircle, 
   CheckCircle2, 
   XCircle, 
   ArrowRight, 
   RotateCcw, 
-  FileText, 
   ShieldCheck,
-  Trophy
+  Trophy,
+  Keyboard
 } from 'lucide-react';
 import { StudyItem } from '../types';
 import { playTone } from '../utils/sound';
@@ -36,7 +36,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
   const [missedItemIds, setMissedItemIds] = useState<string[]>([]);
 
   // If a target item was chosen from Library
-  React.useEffect(() => {
+  useEffect(() => {
     if (targetItemId) {
       const idx = approved.findIndex((i) => i.id === targetItemId);
       if (idx !== -1) {
@@ -48,27 +48,11 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
     }
   }, [targetItemId, approved, onClearTargetItem]);
 
-  if (approved.length === 0) {
-    return (
-      <div className="max-w-2xl mx-auto py-16 px-6 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#E7F0E9] text-[#2B5738] flex items-center justify-center">
-          <HelpCircle className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-serif font-bold text-[#1A1815] mb-2">
-          No Approved Cards for Quiz
-        </h2>
-        <p className="text-sm text-[#7A7264] max-w-md mx-auto mb-6">
-          Approve candidate cards in the Review Queue first. The quiz only tests knowledge you have personally verified.
-        </p>
-      </div>
-    );
-  }
-
   const currentItem = approved[currentIdx];
-  const question = currentItem.quizQuestion;
+  const question = currentItem?.quizQuestion;
 
   const handleSelectOption = (idx: number) => {
-    if (isAnswered) return;
+    if (isAnswered || !question) return;
     setSelectedOption(idx);
     setIsAnswered(true);
 
@@ -89,10 +73,48 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
       setIsAnswered(false);
     } else {
       setIsComplete(true);
-      onRecordQuizResult?.(score + (selectedOption === question.correctOptionIndex ? 1 : 0), approved.length);
+      onRecordQuizResult?.(score + (selectedOption === question?.correctOptionIndex ? 1 : 0), approved.length);
       confetti({ particleCount: 80, spread: 90, origin: { y: 0.6 } });
     }
   };
+
+  // Keyboard shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (!isAnswered) {
+        if (['1', 'a', 'A'].includes(e.key)) handleSelectOption(0);
+        else if (['2', 'b', 'B'].includes(e.key)) handleSelectOption(1);
+        else if (['3', 'c', 'C'].includes(e.key)) handleSelectOption(2);
+        else if (['4', 'd', 'D'].includes(e.key)) handleSelectOption(3);
+      } else {
+        if (e.key === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          handleNext();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnswered, currentIdx, approved.length, question]);
+
+  if (approved.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-6 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#E7F0E9] text-[#2B5738] flex items-center justify-center">
+          <HelpCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-serif font-bold text-[#1A1815] mb-2">
+          No Approved Cards for Quiz
+        </h2>
+        <p className="text-sm text-[#7A7264] max-w-md mx-auto mb-6">
+          Approve candidate cards in the Review Queue first. The quiz only tests knowledge you have personally verified.
+        </p>
+      </div>
+    );
+  }
 
   const handleRestart = () => {
     setCurrentIdx(0);
@@ -137,7 +159,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
   return (
     <div className="max-w-2xl mx-auto py-10 px-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-serif font-bold text-[#1A1815]">
             Source-Grounded Quick Quiz
@@ -153,7 +175,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-[#E5DFD3] h-1.5 rounded-full mb-8 overflow-hidden">
+      <div className="w-full bg-[#E5DFD3] h-1.5 rounded-full mb-6 overflow-hidden">
         <div
           className="bg-[#2B5738] h-full transition-all duration-300"
           style={{ width: `${((currentIdx + 1) / approved.length) * 100}%` }}
@@ -172,6 +194,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
         {/* 4 Multi-Choice Options */}
         <div className="space-y-3 mb-6">
           {question.options.map((option, idx) => {
+            const letter = ['A', 'B', 'C', 'D'][idx];
             let optionStyles = 'bg-[#F5F2EB] border-[#DDD5C7] text-[#2C2824] hover:bg-[#ECE6DB]';
 
             if (isAnswered) {
@@ -191,7 +214,12 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
                 onClick={() => handleSelectOption(idx)}
                 className={`w-full p-4 rounded-xl border text-left text-sm transition-all flex items-start justify-between gap-3 ${optionStyles}`}
               >
-                <span>{option}</span>
+                <div className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-lg bg-[#EAE3D2] text-[#5A5348] flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
+                    {letter}
+                  </span>
+                  <span>{option}</span>
+                </div>
                 {isAnswered && idx === question.correctOptionIndex && (
                   <CheckCircle2 className="w-5 h-5 text-[#2B5738] shrink-0 mt-0.5" />
                 )}
@@ -214,9 +242,14 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
           </div>
         )}
 
-        {/* Next Question Button */}
-        {isAnswered && (
-          <div className="flex justify-end">
+        {/* Next Question Button & Keyboard Hint */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="text-[11px] text-[#8C8477] flex items-center gap-1">
+            <Keyboard className="w-3.5 h-3.5" />
+            <span>{!isAnswered ? 'Keys [1-4] or [A-D]' : 'Press [Enter] for Next'}</span>
+          </div>
+
+          {isAnswered && (
             <button
               onClick={handleNext}
               className="flex items-center gap-1.5 px-6 py-2.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
@@ -224,8 +257,8 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
               <span>{currentIdx + 1 < approved.length ? 'Next Question' : 'Finish Quiz'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

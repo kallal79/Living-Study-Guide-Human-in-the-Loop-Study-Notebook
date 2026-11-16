@@ -76,3 +76,4 @@ export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({ onUnlock }
     </div>
   );
 };
+

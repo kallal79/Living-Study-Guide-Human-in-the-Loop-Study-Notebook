@@ -119,3 +119,4 @@ export const MergeModal: React.FC<MergeModalProps> = ({
     </div>
   );
 };
+

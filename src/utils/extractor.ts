@@ -1,10 +1,59 @@
 import { StudyItem, ItemCategory } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface ExtractionResult {
   items: StudyItem[];
   documentId: string;
   documentTitle: string;
+}
+
+export const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for',
+  'with', 'by', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after',
+  'above', 'below', 'from', 'up', 'down', 'of', 'off', 'over', 'under', 'again', 'further',
+  'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each',
+  'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
+  'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 'this', 'that',
+  'these', 'those', 'it', 'its', 'as', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does'
+]);
+
+export function stemWord(w: string): string {
+  return w.replace(/(ing|ed|es|s|tion|ly|ment|al|ive)$/, '');
+}
+
+/**
+ * Returns token-by-token grounding annotations for visual rendering in the UI.
+ */
+export function getGroundedTokens(sourceFact: string, interpretation: string): Array<{
+  text: string;
+  isGrounded: boolean;
+  isStopWord: boolean;
+}> {
+  const clean = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const sourceWords = sourceFact
+    .split(/\s+/)
+    .map(clean)
+    .filter(Boolean);
+
+  const sourceSet = new Set(sourceWords);
+  const sourceStems = new Set(sourceWords.map(stemWord));
+
+  const tokens = interpretation.split(/(\s+|[.,;!?]+)/);
+
+  return tokens.map((token) => {
+    const cleaned = clean(token);
+    if (!cleaned) {
+      return { text: token, isGrounded: true, isStopWord: false };
+    }
+    const isStop = STOP_WORDS.has(cleaned);
+    const s = stemWord(cleaned);
+    const isGrounded = isStop || sourceSet.has(cleaned) || sourceStems.has(s);
+
+    return {
+      text: token,
+      isGrounded,
+      isStopWord: isStop,
+    };
+  });
 }
 
 /**
@@ -17,22 +66,12 @@ export function verifyGroundedness(sourceFact: string, interpretation: string): 
   isSuspicious: boolean;
   message: string;
 } {
-  const stopWords = new Set([
-    'a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for',
-    'with', 'by', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after',
-    'above', 'below', 'from', 'up', 'down', 'of', 'off', 'over', 'under', 'again', 'further',
-    'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each',
-    'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
-    'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 'this', 'that',
-    'these', 'those', 'it', 'its', 'as', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does'
-  ]);
-
   const cleanWords = (text: string) =>
     text
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 2 && !stopWords.has(w));
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
 
   const sourceWords = new Set(cleanWords(sourceFact));
   const interpWords = cleanWords(interpretation);
@@ -41,15 +80,13 @@ export function verifyGroundedness(sourceFact: string, interpretation: string): 
     return { groundedScore: 1, unsupportedWords: [], isSuspicious: false, message: 'Source text and interpretation match.' };
   }
 
-  // Count how many substantive words in interpretation can be stemmed or matched directly to source
-  const stem = (w: string) => w.replace(/(ing|ed|es|s|tion|ly|ment|al|ive)$/, '');
-  const sourceStems = new Set(Array.from(sourceWords).map(stem));
+  const sourceStems = new Set(Array.from(sourceWords).map(stemWord));
 
   const unsupported: string[] = [];
   let supportedCount = 0;
 
   for (const word of interpWords) {
-    const s = stem(word);
+    const s = stemWord(word);
     if (sourceWords.has(word) || sourceStems.has(s)) {
       supportedCount++;
     } else {
@@ -98,25 +135,47 @@ export function extractStudyItemsFromText(
     sentence: string;
     heading: string;
     category: ItemCategory;
+    title: string;
+    interpretation: string;
   }> = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Detect headings
-    if (line.startsWith('#') || line.endsWith(':') || (line.length < 50 && !line.endsWith('.'))) {
+    // Detect headings (# Header, or Header:)
+    if (line.startsWith('#') || (line.endsWith(':') && line.length < 50) || (line.length < 40 && !line.includes('.'))) {
       currentHeading = line.replace(/^[#*\-0-9.\s]+/, '').replace(/:$/, '').trim() || currentHeading;
       continue;
     }
 
-    // Split paragraphs into clear sentences
-    const sentences = line.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || [line];
+    // Strip timestamps like [00:14] or speaker tags "Professor:"
+    const cleanLine = line.replace(/^\[\d{1,2}:\d{2}(?::\d{2})?\]\s*/, '').replace(/^[A-Za-z\s]+:\s*/, '');
+
+    // Check if line is a bullet list definition: "- Term: Definition" or "**Term**: Definition"
+    const defMatch = cleanLine.match(/^[-*•]?\s*(?:\*\*)?([A-Za-z0-9\s—–'-]{3,35})(?:\*\*)?\s*[:—–-]\s*(.+)$/);
+    if (defMatch) {
+      const termTitle = defMatch[1].trim();
+      const termBody = defMatch[2].trim();
+      if (termBody.length >= 15) {
+        processedChunks.push({
+          sentence: cleanLine.replace(/^[-*•]\s*/, ''),
+          heading: currentHeading,
+          category: 'KEY TERM',
+          title: termTitle,
+          interpretation: termBody,
+        });
+        continue;
+      }
+    }
+
+    // Split paragraphs into sentences
+    const sentences = cleanLine.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || [cleanLine];
 
     for (const rawSentence of sentences) {
-      const sentence = rawSentence.trim();
+      const sentence = rawSentence.replace(/^[-*•0-9.)\s]+/, '').trim();
       if (sentence.length < 20) continue; // Skip trivial fragments
 
-      // Determine category based on syntax and keywords
+      // Categorize based on keywords and syntax
       let category: ItemCategory = 'CONCEPT';
       const lower = sentence.toLowerCase();
 
@@ -134,57 +193,62 @@ export function extractStudyItemsFromText(
         category = 'LECTURE CLAIM';
       }
 
+      // Generate crisp title
+      let title = '';
+      const colonSplit = sentence.split(/[:—–-]/);
+      if (colonSplit.length > 1 && colonSplit[0].trim().length < 40 && colonSplit[0].trim().length > 3) {
+        title = colonSplit[0].trim();
+      } else {
+        const words = sentence.split(/\s+/).slice(0, 5).join(' ');
+        title = words.replace(/[^a-zA-Z0-9\s]$/, '');
+      }
+
+      // Generate clean study interpretation
+      let interpretation = sentence;
+      if (category === 'KEY TERM' && sentence.includes('refers to')) {
+        interpretation = sentence.replace(/.*refers to\s+/i, 'Refers to: ');
+      } else if (category === 'LECTURE CLAIM' && sentence.includes('argued that')) {
+        interpretation = sentence.replace(/.*argued that\s+/i, 'Key claim: ');
+      } else if (category === 'HOW-TO') {
+        interpretation = `Procedure: ${sentence}`;
+      } else if (category === 'QUESTION') {
+        interpretation = `Investigation prompt: ${sentence}`;
+      }
+
       processedChunks.push({
         sentence,
         heading: currentHeading,
         category,
+        title: title.charAt(0).toUpperCase() + title.slice(1),
+        interpretation,
       });
     }
   }
 
-  // Generate grounded StudyItems
+  // Pre-collect all interpretations to serve as high-quality distractors
+  const allInterpretations = processedChunks.map((c) => c.interpretation);
+
+  // Build StudyItems
   for (let idx = 0; idx < processedChunks.length; idx++) {
     const chunk = processedChunks[idx];
-    const sentence = chunk.sentence;
-
-    // Generate crisp title
-    let title = '';
-    const colonSplit = sentence.split(/[:—–-]/);
-    if (colonSplit.length > 1 && colonSplit[0].trim().length < 40 && colonSplit[0].trim().length > 3) {
-      title = colonSplit[0].trim();
-    } else {
-      const words = sentence.split(/\s+/).slice(0, 5).join(' ');
-      title = words.replace(/[^a-zA-Z0-9\s]$/, '');
-    }
-
-    // Generate clean study interpretation strictly based on source sentence
-    let interpretation = sentence;
-    if (chunk.category === 'KEY TERM' && sentence.includes('refers to')) {
-      interpretation = sentence.replace(/.*refers to\s+/i, 'Refers to: ');
-    } else if (chunk.category === 'LECTURE CLAIM' && sentence.includes('argued that')) {
-      interpretation = sentence.replace(/.*argued that\s+/i, 'Key claim: ');
-    } else if (chunk.category === 'HOW-TO') {
-      interpretation = `Procedure: ${sentence}`;
-    } else if (chunk.category === 'QUESTION') {
-      interpretation = `Investigation prompt: ${sentence}`;
-    }
+    const { sentence, heading, category, title, interpretation } = chunk;
 
     // Flashcard formulation
-    const flashcardFront = chunk.category === 'QUESTION'
+    const flashcardFront = category === 'QUESTION'
       ? sentence
       : `Explain the source concept: "${title}"`;
     const flashcardBack = interpretation;
 
-    // Distractor generation for quiz
-    const quizOptions = [
-      interpretation,
-      `Opposite assertion: The contrary condition holds true in this system.`,
-      `Extraneous assumption not documented in the provided notes.`,
-      `Generic unrelated claim regarding alternative historical topics.`
-    ];
+    // Build context-aware distractors from sibling items
+    const siblingDistractors = allInterpretations.filter((interp) => interp !== interpretation);
+    const d1 = siblingDistractors[idx % siblingDistractors.length] || `Opposite assertion: The contrary condition holds true.`;
+    const d2 = siblingDistractors[(idx + 1) % siblingDistractors.length] || `Extraneous assumption not documented in the provided notes.`;
+    const d3 = siblingDistractors[(idx + 2) % siblingDistractors.length] || `Alternative historical theory unrelated to this source excerpt.`;
+
+    const quizOptions = [interpretation, d1, d2, d3];
 
     // Shuffle options so correct is not always first
-    const correctIndex = (idx % 3);
+    const correctIndex = (idx % 4);
     const temp = quizOptions[0];
     quizOptions[0] = quizOptions[correctIndex];
     quizOptions[correctIndex] = temp;
@@ -193,10 +257,10 @@ export function extractStudyItemsFromText(
       id: `item-${Date.now().toString(36)}-${idx}`,
       documentId: docId,
       documentTitle: options.documentTitle,
-      sourceCitation: `${chunk.heading} | ${options.fileName}`,
-      tag: chunk.heading.split(/[\s-]/)[0] || 'Core',
-      category: chunk.category,
-      title: title.charAt(0).toUpperCase() + title.slice(1),
+      sourceCitation: `${heading} | ${options.fileName}`,
+      tag: heading.split(/[\s-]/)[0] || 'Core',
+      category,
+      title,
       sourceFact: sentence,
       studyInterpretation: interpretation,
       status: 'pending', // Starts in the Review Queue! "NOTHING SAVES WITHOUT A CHECK"

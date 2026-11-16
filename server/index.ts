@@ -221,3 +221,4 @@ app.post('/api/auth/unlock', (req, res) => {
 app.listen(PORT, () => {
   console.log(`[Living Study Guide API] running at http://localhost:${PORT}`);
 });
+

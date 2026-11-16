@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractStudyItemsFromText, verifyGroundedness } from '../src/utils/extractor';
+import { extractStudyItemsFromText, verifyGroundedness, getGroundedTokens } from '../src/utils/extractor';
 
 describe('Grounded Source Extractor & Verification', () => {
   const sampleNote = `
@@ -49,6 +49,37 @@ Can individual agency meaningfully alter deeply entrenched institutional inequal
     expect(hallucinatedCheck.isSuspicious).toBe(true);
     expect(hallucinatedCheck.unsupportedWords).toContain('barbarian');
     expect(hallucinatedCheck.unsupportedWords).toContain('invasions');
+  });
+
+  it('annotates token grounding correctly for visual trace in ReviewCard', () => {
+    const source = "The self is social.";
+    const interp = "The self is social because of external factors.";
+
+    const tokens = getGroundedTokens(source, interp);
+    expect(tokens.length).toBeGreaterThan(3);
+
+    const externalToken = tokens.find((t) => t.text.toLowerCase() === 'external');
+    expect(externalToken?.isGrounded).toBe(false);
+
+    const selfToken = tokens.find((t) => t.text.toLowerCase() === 'self');
+    expect(selfToken?.isGrounded).toBe(true);
+  });
+
+  it('handles bullet definitions and strips lecture transcript timestamps', () => {
+    const transcript = `
+# AWS Lecture 1
+[05:22] Professor: In computing, a client can be a web browser or desktop application that a person interacts with to make requests to computer servers.
+- Elastic Compute Cloud: A type of virtual server on AWS.
+`;
+    const items = extractStudyItemsFromText(transcript, {
+      documentTitle: 'AWS Cloud',
+      courseTopic: 'Cloud',
+      fileName: 'transcript.txt',
+    });
+
+    expect(items.length).toBeGreaterThanOrEqual(2);
+    expect(items[0].sourceFact).not.toContain('[05:22]');
+    expect(items[1].title).toContain('Elastic Compute Cloud');
   });
 
   it('creates quiz questions strictly grounded in verbatim citations', () => {

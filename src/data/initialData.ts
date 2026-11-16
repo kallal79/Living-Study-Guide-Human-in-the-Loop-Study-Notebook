@@ -775,3 +775,4 @@ export const initialNotebookState: NotebookState = {
   sessions: initialSessions,
   lastBackupDate: undefined
 };
+

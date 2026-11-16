@@ -72,3 +72,4 @@ export interface NotebookState {
   sessions: StudySessionLog[];
   lastBackupDate?: string;
 }
+

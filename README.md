@@ -147,3 +147,4 @@ Creates an optimized production bundle in `/dist`.
 - [x] **Phase II: Core Architecture & UI**: Calm, professional, responsive reading experience matching all learner reference designs.
 - [x] **Phase III: Human-In-The-Loop Review Queue**: Every candidate sits beside its source sentence with `Approve`, `Edit`, `Merge`, and `Discard`.
 - [x] **Phase IV: Publish & Private Security**: Passcode lock screen protecting content, persistent storage, and full JSON backup download.
+

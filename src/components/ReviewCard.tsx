@@ -1,7 +1,7 @@
-import React from 'react';
-import { Check, Edit3, Trash2, FileText, AlertTriangle, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Edit3, Trash2, FileText, AlertTriangle, ShieldCheck, Sparkles, Eye } from 'lucide-react';
 import { StudyItem } from '../types';
-import { verifyGroundedness } from '../utils/extractor';
+import { verifyGroundedness, getGroundedTokens } from '../utils/extractor';
 
 interface ReviewCardProps {
   item: StudyItem;
@@ -10,6 +10,7 @@ interface ReviewCardProps {
   onApprove: (id: string) => void;
   onEdit: (item: StudyItem) => void;
   onDiscard: (id: string) => void;
+  showKeyboardShortcuts?: boolean;
 }
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({
@@ -19,8 +20,11 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   onApprove,
   onEdit,
   onDiscard,
+  showKeyboardShortcuts = false,
 }) => {
+  const [highlightGrounded, setHighlightGrounded] = useState(false);
   const groundedAnalysis = verifyGroundedness(item.sourceFact, item.studyInterpretation);
+  const tokens = getGroundedTokens(item.sourceFact, item.studyInterpretation);
 
   return (
     <div
@@ -57,8 +61,21 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           )}
         </div>
 
-        {/* Groundedness Pill */}
-        <div className="text-[11px] flex items-center gap-1">
+        {/* Groundedness Pill & Word Highlighter Toggle */}
+        <div className="flex items-center gap-2 text-[11px]">
+          <button
+            onClick={() => setHighlightGrounded(!highlightGrounded)}
+            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors border ${
+              highlightGrounded
+                ? 'bg-[#EAE3D2] text-[#784004] border-[#D5C9B4]'
+                : 'bg-transparent text-[#7A7264] border-transparent hover:bg-[#EFEAE0]'
+            }`}
+            title="Highlight words directly supported vs added by AI"
+          >
+            <Eye className="w-3 h-3" />
+            <span>{highlightGrounded ? 'Word Trace: ON' : 'Word Trace'}</span>
+          </button>
+
           {groundedAnalysis.isSuspicious ? (
             <span className="inline-flex items-center gap-1 text-[#B45309] bg-[#FEF3C7] px-2 py-0.5 rounded-md font-medium border border-[#FDE68A]">
               <AlertTriangle className="w-3 h-3" />
@@ -87,7 +104,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
               <span>SOURCE FACT</span>
               <span className="text-[9px] font-normal text-[#B45309]">Verbatim Quote</span>
             </div>
-            <p className="text-sm text-[#2C2824] font-normal leading-relaxed italic">
+            <p className="text-sm text-[#2C2824] font-normal leading-relaxed italic font-serif">
               "{item.sourceFact}"
             </p>
           </div>
@@ -100,9 +117,36 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
               <span>STUDY INTERPRETATION</span>
               <span className="text-[9px] font-normal text-[#7A7264]">AI Formulation</span>
             </div>
-            <p className="text-sm text-[#1A1815] font-normal leading-relaxed">
-              {item.studyInterpretation}
-            </p>
+
+            {highlightGrounded ? (
+              <p className="text-sm leading-relaxed">
+                {tokens.map((tok, i) => {
+                  if (tok.isStopWord || !tok.text.trim()) {
+                    return <span key={i}>{tok.text}</span>;
+                  }
+                  if (tok.isGrounded) {
+                    return (
+                      <span key={i} className="bg-[#E7F0E9] text-[#166534] rounded px-0.5">
+                        {tok.text}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      key={i}
+                      className="bg-[#FEF3C7] text-[#92400E] underline decoration-amber-400 font-medium rounded px-0.5"
+                      title="Word not found in source excerpt"
+                    >
+                      {tok.text}
+                    </span>
+                  );
+                })}
+              </p>
+            ) : (
+              <p className="text-sm text-[#1A1815] font-normal leading-relaxed">
+                {item.studyInterpretation}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -123,6 +167,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           >
             <Check className="w-3.5 h-3.5" />
             <span>Approve</span>
+            {showKeyboardShortcuts && <span className="text-[9px] opacity-70 ml-0.5 font-mono">[A]</span>}
           </button>
 
           <button
@@ -131,6 +176,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Edit</span>
+            {showKeyboardShortcuts && <span className="text-[9px] opacity-70 ml-0.5 font-mono">[E]</span>}
           </button>
 
           <button
@@ -139,6 +185,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Discard</span>
+            {showKeyboardShortcuts && <span className="text-[9px] opacity-70 ml-0.5 font-mono">[D]</span>}
           </button>
         </div>
       </div>

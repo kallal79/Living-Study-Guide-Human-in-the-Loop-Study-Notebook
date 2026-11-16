@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   RotateCw, 
   ChevronLeft, 
   ChevronRight, 
   Eye, 
-  CheckCircle, 
   FileText, 
   Filter,
   Sparkles,
-  Layers
+  Layers,
+  Keyboard
 } from 'lucide-react';
 import { StudyItem } from '../types';
 import { playTone } from '../utils/sound';
@@ -41,7 +41,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
     : approvedItems.filter((i) => i.tag === selectedTag);
 
   // If a target item was specified from Library, navigate to it
-  React.useEffect(() => {
+  useEffect(() => {
     if (targetItemId) {
       const idx = deck.findIndex((i) => i.id === targetItemId);
       if (idx !== -1) {
@@ -90,6 +90,35 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
     setCurrentIndex((prev) => (prev - 1 + deck.length) % deck.length);
   };
 
+  // Keyboard controls for rapid study
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleFlip();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setShowSource((prev) => !prev);
+      } else if (isFlipped) {
+        if (e.key === '1') handleRate(-1);
+        else if (e.key === '2') handleRate(0);
+        else if (e.key === '3') handleRate(1);
+        else if (e.key === '4') handleRate(2);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFlipped, currentIndex, deck]);
+
   if (approvedItems.length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-16 px-6 text-center">
@@ -109,7 +138,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
   return (
     <div className="max-w-3xl mx-auto py-10 px-6">
       {/* Header & Tag Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
           <h2 className="text-2xl font-serif font-bold text-[#1A1815]">
             Recall Practice
@@ -144,7 +173,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-[#E5DFD3] h-1.5 rounded-full mb-8 overflow-hidden">
+      <div className="w-full bg-[#E5DFD3] h-1.5 rounded-full mb-6 overflow-hidden">
         <div
           className="bg-[#2B5738] h-full transition-all duration-300"
           style={{ width: `${((currentIndex + 1) / deck.length) * 100}%` }}
@@ -192,7 +221,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
                   </h3>
                   <div className="text-xs text-[#8C8477] mt-6 flex items-center justify-center gap-1.5">
                     <RotateCw className="w-3.5 h-3.5" />
-                    <span>Click anywhere to reveal verified answer</span>
+                    <span>Space or Click anywhere to reveal verified answer</span>
                   </div>
                 </div>
               ) : (
@@ -213,8 +242,9 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
                 <FileText className="w-3.5 h-3.5 text-[#A89F90] shrink-0" />
                 <span className="truncate">{currentItem.sourceCitation}</span>
               </div>
-              <div className="text-[11px] text-[#8C8477]">
-                Space / Click to Flip
+              <div className="text-[11px] text-[#8C8477] flex items-center gap-1">
+                <Keyboard className="w-3 h-3" />
+                <span>[Space] flip • [S] source</span>
               </div>
             </div>
           </div>
@@ -226,7 +256,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
               className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold text-[#784004] bg-[#F7EFE1] hover:bg-[#F2E5D0] border border-[#ECD9BC] transition-colors"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>{showSource ? 'Hide Source Excerpt' : 'Show Verbatim Source Excerpt'}</span>
+              <span>{showSource ? 'Hide Source Excerpt' : 'Show Verbatim Source Excerpt [S]'}</span>
             </button>
 
             {showSource && (
@@ -246,28 +276,28 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
                 onClick={() => handleRate(-1)}
                 className="py-3 px-2 bg-[#FCE8E8] hover:bg-[#F9D2D2] text-[#8C2C2C] border border-[#F2B6B6] rounded-xl text-xs font-bold transition-all text-center"
               >
-                <div>Again (1)</div>
+                <div>Again <kbd className="font-mono text-[10px] opacity-75">[1]</kbd></div>
                 <div className="text-[10px] font-normal text-[#9B3838]">Reset</div>
               </button>
               <button
                 onClick={() => handleRate(0)}
                 className="py-3 px-2 bg-[#FAF4EA] hover:bg-[#F2E5D0] text-[#8C5209] border border-[#ECDDC8] rounded-xl text-xs font-bold transition-all text-center"
               >
-                <div>Hard (2)</div>
+                <div>Hard <kbd className="font-mono text-[10px] opacity-75">[2]</kbd></div>
                 <div className="text-[10px] font-normal text-[#784004]">Keep Box</div>
               </button>
               <button
                 onClick={() => handleRate(1)}
                 className="py-3 px-2 bg-[#E7F0E9] hover:bg-[#D5E7D8] text-[#2B5738] border border-[#BDDDC2] rounded-xl text-xs font-bold transition-all text-center"
               >
-                <div>Good (3)</div>
+                <div>Good <kbd className="font-mono text-[10px] opacity-75">[3]</kbd></div>
                 <div className="text-[10px] font-normal text-[#1E3F27]">Advance</div>
               </button>
               <button
                 onClick={() => handleRate(2)}
                 className="py-3 px-2 bg-[#D1E7DD] hover:bg-[#BCE0CE] text-[#0F5132] border border-[#A3D7BD] rounded-xl text-xs font-bold transition-all text-center"
               >
-                <div>Easy (4)</div>
+                <div>Easy <kbd className="font-mono text-[10px] opacity-75">[4]</kbd></div>
                 <div className="text-[10px] font-normal text-[#0A3622]">+2 Boxes</div>
               </button>
             </div>
@@ -278,21 +308,21 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
                 className="flex items-center gap-1 px-4 py-2 bg-[#FAF7F0] hover:bg-[#F2ECE0] text-[#4A4338] border border-[#DDD5C7] rounded-xl text-xs font-medium transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span>Previous</span>
+                <span>Prev [←]</span>
               </button>
 
               <button
                 onClick={handleFlip}
                 className="px-6 py-2.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
               >
-                Reveal Answer
+                Reveal Answer [Space]
               </button>
 
               <button
                 onClick={handleNext}
                 className="flex items-center gap-1 px-4 py-2 bg-[#FAF7F0] hover:bg-[#F2ECE0] text-[#4A4338] border border-[#DDD5C7] rounded-xl text-xs font-medium transition-colors"
               >
-                <span>Next</span>
+                <span>Next [→]</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
