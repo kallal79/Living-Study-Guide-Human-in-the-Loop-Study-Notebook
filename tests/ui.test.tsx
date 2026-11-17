@@ -292,7 +292,8 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Source-Grounded Quick Quiz')).toBeTruthy();
-      expect(screen.getByText(/Primary Socialization/i)).toBeTruthy();
+      expect(screen.getByText(/Fresh via \/api\/quiz\/generate/i)).toBeTruthy();
+      expect(screen.getAllByText(/Primary Socialization/i).length).toBeGreaterThanOrEqual(1);
     });
   });
 
