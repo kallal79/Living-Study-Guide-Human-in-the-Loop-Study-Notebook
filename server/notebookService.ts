@@ -11,17 +11,17 @@ import {
 import { extractStudyItemsFromText } from '../src/utils/extractor';
 import { generateDynamicQuiz, QuizGenerationOptions } from '../src/utils/quizGenerator';
 
-const DATA_DIR = path.join(process.cwd(), 'server', 'data');
-const DB_FILE = path.join(DATA_DIR, 'database.json');
+const DEFAULT_DATA_DIR = path.join(process.cwd(), 'server', 'data');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+function getDbFilePath(): string {
+  return process.env.LIVING_STUDY_DB_FILE || path.join(DEFAULT_DATA_DIR, 'database.json');
 }
 
 export function readState(): NotebookState {
+  const dbFile = getDbFilePath();
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
+    if (fs.existsSync(dbFile)) {
+      const data = fs.readFileSync(dbFile, 'utf-8');
       const parsed = JSON.parse(data);
       if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
         return parsed;
@@ -36,13 +36,29 @@ export function readState(): NotebookState {
 }
 
 export function saveState(state: NotebookState): void {
+  const dbFile = getDbFilePath();
+  const dir = path.dirname(dbFile);
+  const tempFile = `${dbFile}.tmp`;
+  const payload = JSON.stringify(state, null, 2);
+
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
-    const tempFile = `${DB_FILE}.tmp`;
-    fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), 'utf-8');
-    fs.renameSync(tempFile, DB_FILE);
+    try {
+      fs.writeFileSync(tempFile, payload, 'utf-8');
+      fs.renameSync(tempFile, dbFile);
+    } catch {
+      // Fallback for Windows/OneDrive transient file-lock on atomic rename
+      fs.writeFileSync(dbFile, payload, 'utf-8');
+      if (fs.existsSync(tempFile)) {
+        try {
+          fs.unlinkSync(tempFile);
+        } catch {
+          // Ignore temp cleanup error
+        }
+      }
+    }
   } catch (err) {
     console.error('Failed to write database.json:', err);
   }

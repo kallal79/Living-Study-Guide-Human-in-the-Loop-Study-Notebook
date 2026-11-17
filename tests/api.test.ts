@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { initialNotebookState } from '../src/data/initialData';
-import { NotebookState } from '../src/types';
-import { handleApiRequest, readState, saveState } from '../server/apiHandler';
+import { handleApiRequest, saveState } from '../server/apiHandler';
 import { EventEmitter } from 'events';
 
 function invokeHandler(
@@ -50,15 +52,27 @@ function invokeHandler(
 }
 
 describe('Living Study Guide In-Process API Middleware', () => {
-  let originalBackup: NotebookState;
+  let prevDbEnv: string | undefined;
+  let tempDbPath: string;
 
   beforeAll(() => {
-    originalBackup = structuredClone(readState());
+    prevDbEnv = process.env.LIVING_STUDY_DB_FILE;
+    tempDbPath = path.join(os.tmpdir(), `living-study-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+    process.env.LIVING_STUDY_DB_FILE = tempDbPath;
     saveState(structuredClone(initialNotebookState));
   });
 
   afterAll(() => {
-    saveState(originalBackup);
+    if (prevDbEnv === undefined) {
+      delete process.env.LIVING_STUDY_DB_FILE;
+    } else {
+      process.env.LIVING_STUDY_DB_FILE = prevDbEnv;
+    }
+    try {
+      if (fs.existsSync(tempDbPath)) fs.unlinkSync(tempDbPath);
+    } catch {
+      // Ignore cleanup error
+    }
   });
 
   it('handles GET /api/health with query strings cleanly', async () => {
