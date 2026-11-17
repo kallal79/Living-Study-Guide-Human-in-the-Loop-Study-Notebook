@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  CheckSquare,
   GitMerge,
   Check,
   Trash2,
@@ -254,7 +255,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
-      {/* Top Header matching Screenshot 5 & Image 1 */}
+      {/* Filter & Sort Controls */}
       <div className="space-y-3 mb-6 pb-4 border-b border-[#E8E2D5]">
         {/* Row 1: Topic Tag Chips & Action */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -301,7 +302,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Category Filter Pills matching Image 1 */}
+        {/* Category Filter Pills */}
         <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
           <span className="text-[#8C8477] font-semibold uppercase tracking-wider mr-1">Type:</span>
           {categories.map((cat) => {
@@ -574,13 +575,11 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
           </button>
         </div>
       ) : (
-        /* All Queue Clear State */
         <div className="p-12 text-center bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl">
-          <img
-            src="/images/hitl-verify.jpg"
-            alt="All items verified beside their source quotes"
-            className="w-36 h-24 mx-auto mb-4 object-cover rounded-2xl border border-[#E5DFD3] shadow-sm"
-          />
+          {/* Empty queue state */}
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#E7F0E9] text-[#2B5738] flex items-center justify-center">
+            <CheckSquare className="w-6 h-6" />
+          </div>
           <h3 className="text-lg font-serif font-bold text-[#1A1815] mb-1">
             Review Queue is Clear
           </h3>

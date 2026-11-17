@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ArrowRight, Check, Edit3, Trash2, Library } from 'lucide-react';
+import { X, ArrowRight, ShieldCheck, Check, Edit3, Trash2, Library } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playTone } from '../utils/sound';
 
@@ -37,12 +37,10 @@ const MissionFlowModalInner: React.FC<MissionFlowModalProps> = ({ onClose }) => 
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-3xl p-8 shadow-2xl relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-6">
-          <div className="flex items-center gap-3">
-            <img
-              src="/images/hitl-verify.jpg"
-              alt="Human-in-the-loop source verification illustration"
-              className="w-14 h-11 object-cover rounded-xl border border-[#DFD5C3] shrink-0"
-            />
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 bg-[#EAE3D2] text-[#8C5209] rounded-xl">
+              <ShieldCheck className="w-5 h-5" />
+            </span>
             <div>
               <div className="text-[10px] font-bold tracking-widest uppercase text-[#8C8477]">
                 HUMAN-IN-THE-LOOP DESIGN ARCHITECTURE
@@ -62,7 +60,7 @@ const MissionFlowModalInner: React.FC<MissionFlowModalProps> = ({ onClose }) => 
           </button>
         </div>
 
-        {/* Diagram Flow matching Image 2 */}
+        {/* Decision workflow */}
         <div className="p-6 bg-[#F5F2EB] border border-[#DDD5C7] rounded-2xl mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
             {/* Step 1: Input Candidate Box */}
@@ -169,7 +167,7 @@ const MissionFlowModalInner: React.FC<MissionFlowModalProps> = ({ onClose }) => 
           </div>
         </div>
 
-        {/* Explanatory text from Image 2 */}
+        {/* Summary note */}
         <p className="text-xs text-[#5A5348] leading-relaxed mb-6 font-normal">
           Each item arrives with the sentence it came from, so checking it takes seconds. A knowledge base built without that step fills up with confident summaries nobody can trace.
         </p>

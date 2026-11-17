@@ -3,7 +3,7 @@ import { initialNotebookState, awsNotebookState, sociologyNotebookState } from '
 import { NotebookState, StudyItem } from '../src/types';
 
 describe('Living Study Guide Human-In-The-Loop Workflow', () => {
-  it('initial state has exact counts matching learner screenshots (13 pending, 8 approved)', () => {
+  it('loads initial dataset with expected counts (13 pending, 8 approved)', () => {
     const pending = initialNotebookState.items.filter((i) => i.status === 'pending');
     const approved = initialNotebookState.items.filter((i) => i.status === 'approved');
 
@@ -106,7 +106,7 @@ describe('Living Study Guide Human-In-The-Loop Workflow', () => {
     expect(checkPasscode('1234')).toBe(true);
   });
 
-  it('supports switching to AWS Module 1 dataset (matching learner showcase Image 1)', () => {
+  it('supports switching to AWS Module 1 dataset', () => {
     expect(awsNotebookState.notebookName).toContain('AWS Module 1');
     expect(awsNotebookState.items.length).toBe(15);
 

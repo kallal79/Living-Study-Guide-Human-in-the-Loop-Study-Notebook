@@ -351,7 +351,7 @@ export const App: React.FC = () => {
     );
   }
 
-  // Phase IV: Locked screen check
+  // Lock screen gate
   if (state.isLocked && !isUnlocked) {
     return (
       <PrivateLockScreen
@@ -363,11 +363,11 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FBF9F5] text-[#1A1815]">
-      {/* Replit Dev Preview Banner matching Image 4 */}
+      {/* Development preview status banner */}
       <ReplitPreviewBanner onOpenSettings={() => setIsSettingsOpen(true)} />
 
       <div className="flex flex-1">
-        {/* Left Sidebar matching Screenshots */}
+        {/* Sidebar navigation */}
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}

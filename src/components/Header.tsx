@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 border-b border-[#E8E2D5] bg-[#FBF9F5]/95 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 gap-3 no-print">
-      {/* Mobile Menu Trigger + Breadcrumb matching Screenshot 3 */}
+      {/* Mobile menu trigger & workspace breadcrumb */}
       <div className="flex items-center gap-3 text-xs tracking-wider uppercase font-semibold text-[#8C8477] min-w-0">
         {onOpenMobileNav && (
           <button
@@ -248,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={onLockNotebook}
-          title="Lock private notebook (Phase IV Security Check)"
+          title="Lock private notebook"
           className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium text-[#5C5549] hover:bg-[#EFEAE0] border border-[#E0D9CB] transition-colors"
         >
           {state.isLocked ? (
@@ -264,7 +264,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        {/* User Avatar Circle 'B' as in screenshot 3 */}
+        {/* Owner profile menu */}
         <div className="relative">
           <button
             type="button"

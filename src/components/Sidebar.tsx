@@ -239,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Bottom Progress & Settings matching Screenshot 4 */}
+      {/* Bottom Progress & Settings */}
       <div className="p-4 border-t border-[#E5DFD3] bg-[#EFEBE0]/60">
         <div className="mb-2">
           <div className="flex justify-between items-center text-xs mb-1.5 font-medium text-[#5C5549]">

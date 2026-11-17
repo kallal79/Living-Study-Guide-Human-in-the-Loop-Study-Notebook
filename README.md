@@ -1,158 +1,52 @@
-# Living Study Guide 
+# Living Study Guide
 
-> **Turn your own notes into a private study guide that writes flashcards and quiz questions confidently grounded in only your trusted sources.**
+A private, source-grounded study notebook that extracts concepts, claims, key terms, processes, and how-to steps from your notes and requires human review before anything enters the study library.
 
-An implementation of the **Living Study Guide** mission, featuring a human-in-the-loop AI review queue, side-by-side source fact grounding, spaced-repetition flashcards, adaptive quizzes, focused study sessions, understanding analytics, and Phase IV passcode privacy and full JSON backup.
+## Overview
 
----
+When source excerpts are brief, automated summaries often add outside assumptions that were never in the original notes. Living Study Guide puts every candidate card beside its exact source sentence (`SOURCE FACT` vs. `STUDY INTERPRETATION`) so you can approve, edit, retag, merge, or discard each item before practicing flashcards or quizzes from it.
 
-## App Previews & Illustrations
+## Core Features
 
-| Understanding Dashboard | Overview Workspace |
-| :---: | :---: |
-| ![Understanding Dashboard](./submission/cover-dashboard-understanding.png) | ![Overview Study Guide](./submission/overview-study-guide.png) |
+- **Overview & Study Focus**: Tracks pending queue count, flagged addition checks, approved library cards, source material inspection, and focus modes (`Exam Review`, `Concept Recall`, `Practical How-To`, `Meeting Prep`).
+- **Human-in-the-Loop Review Queue**: Side-by-side comparison of verbatim source sentences and interpretations, token-level Word Trace highlighting, inline/bulk tagging, card merging, keyboard shortcuts (`A`, `E`, `D`, `M`), and Undo recovery.
+- **Approved Knowledge Library**: Filter and search verified cards across Cards, Source-Linked Topic Guides, and Table views, inspect Concept Pages with related terms, or export to Markdown, Anki CSV, and print.
+- **Spaced-Repetition Flashcards**: 5-level Leitner box practice (`Box 1` to `Box 5`) with keyboard navigation (`Space`, `1-4`, `S` to toggle verbatim source excerpt).
+- **Dynamic Quick Quiz (`/api/quiz/generate`)**: Generates varied, non-repeating 4-choice questions across 6 formats (`Core MCQ`, `Concept Match`, `Fill-in-Blank`, `Grounding Check`, `Source Verify`, `Source Evidence`) with source citations and post-quiz answer breakdowns.
+- **Study Session & Understanding Dashboard**: Timed focus sessions (`5`, `15`, `25`, `45` minutes) with a Spotlight Recall card, optional Web Audio ambient sound presets, and progress analytics covering coverage, sessions logged, and groundedness rate.
+- **Ingestion, Lock Screen & Backups**: Upload `.txt`/`.md`/`.json` files or create single cards directly, lock the notebook behind a passcode, and download or restore full JSON backups persisted via `server/data/database.json`.
 
-| Human-in-the-Loop Review Queue | Dynamic Quick Quiz |
-| :---: | :---: |
-| ![Review Queue](./submission/review-queue-hitl.png) | ![Quick Quiz](./submission/quick-quiz-dynamic.png) |
+## Tech Stack
 
-| Approved Library | Recall Flashcards | Focused Study Session |
-| :---: | :---: | :---: |
-| ![Library](./submission/library-approved-cards.png) | ![Flashcards](./submission/flashcards-recall.png) | ![Study Session](./submission/study-session-timer.png) |
+- **Frontend**: React 18, TypeScript, Vite 6, Tailwind CSS, Lucide Icons
+- **Backend**: Node.js, Express 4 + Vite in-process API middleware (`server/apiHandler.ts`), atomic JSON storage (`server/notebookService.ts`)
+- **Testing**: Vitest, React Testing Library, JSDOM
 
-| Study Desk Artwork | HITL Verification Seal |
-| :---: | :---: |
-| ![Study Hero Illustration](./public/images/study-hero.jpg) | ![HITL Verification Illustration](./public/images/hitl-verify.jpg) |
+## Local Development
 
----
-
-## Core Philosophy: Nothing Saves Without A Check
-
-```
-+-------------------------------------------------------------+
-|                     SOURCE EXCERPT                          |
-| "A kill switch exists for shutting off risky behavior..."    |
-+-------------------------------------------------------------+
-                              +
-                              |
-+-----------------------------v-------------------------------+
-|                  WHAT THE AI MADE OF IT                     |
-|  "A control for shutting off risky behavior mid-incident."  |
-+-------------------------------------------------------------+
-                              +
-                              |
-                     +--------v--------+
-                     |   YOU DECIDE    |
-                     +---+---------+---+
-                         |         |
-           [Edit, then approve]    [Discard]
-                         |         |
-                         v         v
-             +-----------------+  Never Saved
-             | Private Library |  (Zero Hallucinations)
-             +-----------------+
-```
-
-When source sentences are short, ungrounded AI tools tend to fill the void with popular historical assumptions (e.g., adding *"because of barbarian invasions"* to *"Rome fell in 476 AD"* when the notes didn't say that). The Living Study Guide displays the original source sentence right next to the generated explanation, empowering the human to approve, edit, merge, or discard every candidate before it enters the library.
-
----
-
-##  Features & Navigation
-
-1. **Overview Dashboard** (`#overview`):
-   - Live Study Focus switcher (`Exam Review`, `Concept Recall`, `Practical How-To`, `Meeting Prep`)
-   - Custom study-desk editorial illustration (`public/images/study-hero.jpg`) paired with `NEXT UP: Review one candidate`
-   - Real-time metrics (**Needs your eye**, flagged addition count, **In your library**) and Trusted Source Material inspector
-   - Quick launch for flashcards, quizzes, and note ingestion
-
-2. **Human-in-the-Loop Review Queue** (`#review`):
-   - Topic filter chips (`Showing: All, Socialization, Stratification`), type filters (`CONCEPT`, `LECTURE CLAIM`, `KEY TERM`, `SYSTEM`, `PROCESS`, `HOW-TO`, `QUESTION`), live search, `Check Additions` filter, and `Goal Priority` ordering
-   - Two comparative side-by-side boxes on every card:
-     - **SOURCE FACT**: Verbatim quote from source notes
-     - **STUDY INTERPRETATION**: Grounded study formulation
-   - Token-level **Word Trace** toggle highlighting source-backed vs added terms with percentage overlap
-   - Interactive actions: `Approve [A]`, `Edit [E]` (with 1-click *Cut back to exact source fact*), `Discard [D]`, inline card **Tag editing**, bulk **Retag**, bulk Approve/Discard, and **Select to Merge (`M`)** with Undo toast recovery
-
-3. **Approved Knowledge Library** (`#library`):
-   - Searchable, filterable repository of verified knowledge across **Cards**, **Source-Linked Guides & How-To Summaries**, and **Compact Table** views
-   - Clickable **Concept Page modal** displaying full groundedness overlap, Leitner box level, related concepts, and quick Flashcard / Quiz launch
-   - 1-click **Markdown Study Guide**, **Anki CSV**, and print-ready exports
-
-4. **Spaced-Repetition Flashcards** (`#flashcards`):
-   - Interactive 3D flip card animation with topic and Leitner Box filters (`All Boxes`, `Box 1-2`, `Box 3-5`)
-   - `Show Verbatim Source Excerpt [S]` drawer to inspect the original quote beside the card
-   - 5-Level Leitner Spaced Repetition rating: `Again [1]`, `Hard [2]`, `Good [3]`, `Easy [4]`
-
-5. **Dynamic Multi-Format Quick Quiz** (`#quiz` + `POST /api/quiz/generate`):
-   - Dynamically generates non-repeating 4-choice questions across **6 study formats**: `Core MCQ`, `Concept Match`, `Fill-in-Blank (Quote Cloze)`, `Grounding Check`, `Source Verify`, and `Source Evidence`
-   - Tracks excluded question signatures across attempts so retakes (`Generate Different Quiz`) produce fresh items
-   - Displays verbatim source quote citations, streak tracking, `Retry Missed`, and a full per-question **Review Answers** breakdown
-
-6. **Focused Study Session** (`#session`):
-   - Zen countdown timer (`5`, `15`, `25`, `45` minutes) paired with a live **Spotlight Recall Card** and guided 3-step routine
-   - Optional Web Audio API **Ambient Focus** synthesis (`Gentle Rain`, `Zen Stream`, `Quiet Library Room`) with volume control and UI chime mute toggle
-
-7. **Understanding Dashboard** (`#understanding`):
-   - **Source-Linked Coverage**: Circular foundation gauge (`8/8`), topic progress bars, Knowledge Type counts, and Recent Sessions log
-   - **Groundedness & Retention** card displaying clean grounded percentage, Box 3+ mastered count, and quiz average
-
-8. **Document Ingestion & Manual Card Engine**:
-   - Paste lecture notes/transcripts, upload `.txt` / `.md` / `.json` files, or load built-in **Sociology 101**, **AWS Module 1**, and **Incident Runbook** presets
-   - **Create Single Study Card** tab for individual cards — all extracted and manual cards start `pending` in the Review Queue
-
-9. **Phase IV Privacy, API & Full Backup**:
-   - Optional PIN passcode lock screen (`1234` demo default, hides default hint when customized) with lock-gate pre-load protection
-   - Full 1-click **JSON Backup** download and restore (`/api/backup`, `/api/restore`) persisted atomically to `server/data/database.json`
-
----
-
-##  Getting Started
-
-### Prerequisites
-- Node.js (v18+)
-- npm
-
-### Installation
 ```bash
 npm install
-```
-
-### Running Locally
-Start the integrated development server (Vite frontend + in-process `/api/*` backend via `server/apiHandler.ts`):
-```bash
 npm start
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-Or build and serve the standalone Express production bundle (`npm run build` followed by `npm run server` on port `3001`):
+Open `http://localhost:5173` in your browser. The Vite dev server mounts all `/api/*` endpoints in-process so frontend and API run together in a single command.
+
+For a standalone Express build:
+
 ```bash
 npm run build
 npm run server
 ```
 
-### Running Tests
-Execute the full Vitest test suite (`5` test suites, `32` tests):
+## Testing
+
 ```bash
 npm test
 ```
-- `tests/extractor.test.ts` (`6` tests): Grounded extraction, categorization, and hallucination checks ("Rome fell in 476 AD")
-- `tests/workflow.test.ts` (`6` tests): Full human-in-the-loop review, edit, merge, Leitner flashcards, and session logging
-- `tests/quizGenerator.test.ts` (`3` tests): All 6 quiz formats, non-repeating signature exclusion, and quote cloze masking
-- `tests/api.test.ts` (`6` tests): In-process `/api/*` endpoints (`/health`, `/notebook`, `/backup`, `/quiz/generate`, `/items`, `/upload`, `/sessions`, `/auth/unlock`)
-- `tests/ui.test.tsx` (`11` tests): JSDOM end-to-end UI workflows, tagging, Library guides, dynamic quiz, artwork assets, and passcode lock screen
 
-### Production Build
-```bash
-npm run build
-```
-Creates an optimized production bundle in `/dist`.
-
----
-
-##  Mission Verification Checklist
-
-- [x] **Phase I: Source Material Selection**: Pre-loaded with Sociology 101 (Mead, Cooley, Stratification) and AWS Cloud Practitioner Module 1.
-- [x] **Phase II: Core Architecture & UI**: Calm, professional, responsive reading experience matching all learner reference designs.
-- [x] **Phase III: Human-In-The-Loop Review Queue**: Every candidate sits beside its source sentence with `Approve`, `Edit`, `Merge`, and `Discard`.
-- [x] **Phase IV: Publish & Private Security**: Passcode lock screen protecting content, persistent storage, and full JSON backup download.
-
+Runs all 5 Vitest suites (32 tests):
+- `tests/extractor.test.ts` — Extraction parsing, cognate groundedness checks, and hallucination detection
+- `tests/workflow.test.ts` — Approval gating, merge, edit, Leitner updates, and dataset switching
+- `tests/quizGenerator.test.ts` — Multi-format quiz generation and signature non-repetition
+- `tests/api.test.ts` — Full API lifecycle tests running against an isolated temporary JSON store (`LIVING_STUDY_DB_FILE`)
+- `tests/ui.test.tsx` — End-to-end JSDOM React component and user workflow checks

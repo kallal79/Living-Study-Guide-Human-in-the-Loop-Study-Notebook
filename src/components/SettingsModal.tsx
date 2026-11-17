@@ -185,7 +185,7 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-[#8C5209]" />
                 <span className="text-xs font-bold text-[#1A1815]">
-                  Require Passcode on Launch (Phase IV)
+                  Require Passcode on Launch
                 </span>
               </div>
               <input
@@ -216,7 +216,7 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
           <div className="p-4 bg-[#FAF4EA] border border-[#ECDDC8] rounded-2xl">
             <div className="text-xs font-bold uppercase tracking-wider text-[#8C5209] mb-2 flex items-center gap-1.5">
               <Download className="w-3.5 h-3.5 text-[#C05621]" />
-              <span>Full Study Guide Backup (Phase IV Requirement)</span>
+              <span>Full Study Guide Backup</span>
             </div>
             <p className="text-xs text-[#6B6355] mb-3 leading-relaxed">
               Export an exact copy of your notes, approved cards, review queue, and progress.

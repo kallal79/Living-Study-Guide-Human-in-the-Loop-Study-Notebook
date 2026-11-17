@@ -164,7 +164,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         {item.title}
       </h3>
 
-      {/* Two Comparative Columns matching Screenshot 5 */}
+      {/* Source excerpt vs. study interpretation */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Column 1: SOURCE FACT */}
         <div className="p-4 rounded-xl bg-[#F7EFE2] border border-[#E8DCBE] flex flex-col justify-between">
@@ -239,7 +239,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           <span className="truncate">{item.sourceCitation}</span>
         </div>
 
-        {/* Action Buttons matching Screenshot 5 */}
+        {/* Action buttons */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"

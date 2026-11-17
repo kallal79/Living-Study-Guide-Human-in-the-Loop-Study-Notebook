@@ -70,7 +70,7 @@ In order to prevent silent stale data: always compare automated summary output b
 ];
 
 export const sociologyItems: StudyItem[] = [
-  // ---------------- APPROVED ITEMS (In Library - 8 items matching Screenshot 4) ----------------
+  // Approved baseline cards (8 items)
   {
     id: 'soc-app-1',
     documentId: 'doc-soc-101',
@@ -344,7 +344,7 @@ export const sociologyItems: StudyItem[] = [
     }
   },
 
-  // ---------------- PENDING ITEMS (In Review Queue - 13 items matching Screenshot 5) ----------------
+  // Pending review candidates (13 items)
   {
     id: 'soc-pen-1',
     documentId: 'doc-soc-101',
@@ -776,7 +776,7 @@ export const sociologyItems: StudyItem[] = [
   }
 ];
 
-// ---------------- AWS MODULE 1 NOTEBOOK DATA (Matching Image 1) ----------------
+// AWS Module 1 study dataset
 export const awsItems: StudyItem[] = [
   {
     id: 'aws-app-1',

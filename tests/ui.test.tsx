@@ -93,10 +93,6 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     expect(screen.getByText('NOTHING SAVES WITHOUT A CHECK')).toBeTruthy();
     expect(screen.getByText('Review one candidate →')).toBeTruthy();
     expect(screen.getByText('TRUSTED SOURCE MATERIAL (1)')).toBeTruthy();
-    const heroImg = screen.getByAltText(/Open study notebook with flashcards/i) as HTMLImageElement;
-    expect(heroImg.getAttribute('src')).toBe('/images/study-hero.jpg');
-    const hitlImg = screen.getByAltText(/Human-in-the-loop verification comparing source/i) as HTMLImageElement;
-    expect(hitlImg.getAttribute('src')).toBe('/images/hitl-verify.jpg');
   });
 
   it('navigates cleanly across every sidebar page without crashing', async () => {
@@ -305,9 +301,6 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
 
     expect(screen.queryByText('Explain inequality from the source.')).toBeNull();
     expect(screen.getByText('Private Study Guide')).toBeTruthy();
-    expect(
-      (screen.getByAltText(/Private study sanctuary illustration/i) as HTMLImageElement).getAttribute('src')
-    ).toBe('/images/study-hero.jpg');
 
     const input = screen.getByPlaceholderText(/Enter passcode/i);
     fireEvent.change(input, { target: { value: '0000' } });

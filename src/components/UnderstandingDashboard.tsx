@@ -84,7 +84,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto py-8 sm:py-10 px-4 sm:px-8">
-      {/* Top Section matching Screenshot 4: Two Hero Cards */}
+      {/* Coverage & next-step cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Source-Linked Coverage Card (Takes 2 cols) */}
         <div className="lg:col-span-2 p-7 bg-[#FAF7F0] border border-[#E8E2D5] rounded-3xl shadow-sm flex flex-col justify-between">
@@ -107,7 +107,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
                 : 'Approve candidate cards in the Review Queue so verified concepts enter your recall library.'}
             </p>
 
-            {/* Topic Progress Bars matching Screenshot 4 */}
+            {/* Topic Progress Bars */}
             <div className="space-y-4 pt-4 border-t border-[#EDE7DA]">
               {tagKeys.slice(0, 5).map((tag, idx) => {
                 const info = tagsMap[tag];
@@ -135,7 +135,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
           </div>
         </div>
 
-        {/* Suggested Next Card matching Screenshot 4 */}
+        {/* Suggested Next Action */}
         <div className="p-7 bg-[#233D4D] text-[#FAF7F0] rounded-3xl shadow-md flex flex-col justify-between">
           <div>
             <div className="text-[11px] font-bold tracking-widest uppercase text-[#A0C4D9] mb-3">
@@ -160,7 +160,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
         </div>
       </div>
 
-      {/* Four Metric Cards matching Screenshot 4 + Groundedness Health */}
+      {/* Study Habit, Interpretation, Tags & Groundedness Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Review Habit */}
         <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
@@ -267,7 +267,7 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
         </div>
       </div>
 
-      {/* Explanatory Bottom Card matching Screenshot 4 */}
+      {/* Dashboard scope note */}
       <div className="p-6 bg-[#EFEBE1] border border-[#DDD5C7] rounded-2xl">
         <div className="flex items-start gap-3.5">
           <span className="p-1.5 rounded-lg bg-[#E2DACB] text-[#5C5549] mt-0.5 shrink-0">

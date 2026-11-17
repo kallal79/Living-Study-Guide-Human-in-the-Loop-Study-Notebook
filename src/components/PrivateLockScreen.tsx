@@ -23,26 +23,15 @@ export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FBF9F5] flex flex-col justify-center items-center p-6 select-none">
-      <div className="w-full max-w-md bg-[#FAF7F0] border border-[#E8E2D5] rounded-3xl overflow-hidden shadow-xl text-center">
-        {/* Framed Editorial Header Illustration */}
-        <div className="relative h-28 bg-[#F5F2EB] border-b border-[#E8E2D5] overflow-hidden">
-          <img
-            src="/images/study-hero.jpg"
-            alt="Private study sanctuary illustration"
-            className="w-full h-full object-cover opacity-85"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF7F0] via-transparent to-transparent" />
+      <div className="w-full max-w-md bg-[#FAF7F0] border border-[#E8E2D5] rounded-3xl p-8 shadow-xl text-center">
+        {/* Lock Icon */}
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[#F7EFE1] text-[#8C5209] flex items-center justify-center border border-[#ECD9BC]">
+          <Lock className="w-8 h-8 text-[#C05621]" />
         </div>
-
-        <div className="px-8 pb-8 -mt-8 relative z-10">
-          {/* Lock Icon */}
-          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#F7EFE1] text-[#8C5209] flex items-center justify-center border border-[#ECD9BC] shadow-sm">
-            <Lock className="w-8 h-8 text-[#C05621]" />
-          </div>
 
         <div className="text-[11px] font-bold uppercase tracking-widest text-[#8C8477] mb-2 flex items-center justify-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-[#2B5738]" />
-          <span>PHASE IV PRIVATE NOTEBOOK</span>
+          <span>PRIVATE STUDY NOTEBOOK</span>
         </div>
 
         <h1 className="text-3xl font-serif font-bold text-[#1A1815] mb-2">
@@ -92,7 +81,6 @@ export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({
               Default Passcode: <span className="font-mono font-semibold text-[#1A1815]">1234</span>
             </>
           )}
-        </div>
         </div>
       </div>
     </div>

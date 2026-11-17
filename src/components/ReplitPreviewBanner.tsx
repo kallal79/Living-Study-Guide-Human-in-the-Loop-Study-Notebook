@@ -14,7 +14,7 @@ export const ReplitPreviewBanner: React.FC<ReplitPreviewBannerProps> = ({ onOpen
   return (
     <div className="bg-[#1E293B] text-[#E2E8F0] text-xs px-4 py-2 select-none border-b border-[#0F172A] z-30 transition-all no-print">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        {/* Banner Notice matching Image 4 */}
+        {/* Preview environment notice */}
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" />
           <span className="text-[11px] text-[#94A3B8]">
@@ -54,7 +54,7 @@ export const ReplitPreviewBanner: React.FC<ReplitPreviewBannerProps> = ({ onOpen
         </div>
       </div>
 
-      {/* Expanded Verification Checklist Drawer matching Image 3 */}
+      {/* Expandable environment verification drawer */}
       {isChecklistExpanded && (
         <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-[#334155] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-[11px] animate-fade-in">
           <div className="flex items-center gap-1.5 text-[#10B981]">
