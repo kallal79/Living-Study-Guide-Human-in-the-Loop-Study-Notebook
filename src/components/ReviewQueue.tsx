@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CheckSquare,
   GitMerge,
   Check,
   Trash2,
@@ -577,9 +576,11 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
       ) : (
         /* All Queue Clear State */
         <div className="p-12 text-center bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#E7F0E9] text-[#2B5738] flex items-center justify-center">
-            <CheckSquare className="w-6 h-6" />
-          </div>
+          <img
+            src="/images/hitl-verify.jpg"
+            alt="All items verified beside their source quotes"
+            className="w-36 h-24 mx-auto mb-4 object-cover rounded-2xl border border-[#E5DFD3] shadow-sm"
+          />
           <h3 className="text-lg font-serif font-bold text-[#1A1815] mb-1">
             Review Queue is Clear
           </h3>

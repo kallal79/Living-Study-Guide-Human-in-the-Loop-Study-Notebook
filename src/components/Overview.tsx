@@ -59,50 +59,65 @@ export const Overview: React.FC<OverviewProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto py-8 sm:py-10 px-4 sm:px-8">
-      {/* Category Tagline matching Screenshot 3 */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className="w-2 h-2 rounded-full bg-[#C05621]" />
-        <span className="text-xs font-bold tracking-widest uppercase text-[#8C8477]">
-          {state.studyGoal === 'exam_review' && (isSociology ? 'STRATIFICATION EXAM REVIEW' : `${state.activeTopic.toUpperCase()} EXAM REVIEW`)}
-          {state.studyGoal === 'concept_recall' && 'CONCEPT RECALL WORKSPACE'}
-          {state.studyGoal === 'meeting_prep' && 'PRACTICAL MEETING PREP'}
-          {state.studyGoal === 'practical_howto' && 'HOW-TO SYSTEM GUIDE'}
-        </span>
-      </div>
+      {/* Editorial Hero Header + Custom Study Desk Illustration */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center mb-8">
+        <div className="lg:col-span-7">
+          {/* Category Tagline matching Screenshot 3 */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full bg-[#C05621]" />
+            <span className="text-xs font-bold tracking-widest uppercase text-[#8C8477]">
+              {state.studyGoal === 'exam_review' && (isSociology ? 'STRATIFICATION EXAM REVIEW' : `${state.activeTopic.toUpperCase()} EXAM REVIEW`)}
+              {state.studyGoal === 'concept_recall' && 'CONCEPT RECALL WORKSPACE'}
+              {state.studyGoal === 'meeting_prep' && 'PRACTICAL MEETING PREP'}
+              {state.studyGoal === 'practical_howto' && 'HOW-TO SYSTEM GUIDE'}
+            </span>
+          </div>
 
-      {/* Big Serif Heading matching Screenshot 3 */}
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal text-[#1A1815] tracking-tight leading-tight mb-4">
-        {isSociology
-          ? 'Explain inequality from the source.'
-          : `Master ${state.activeTopic} from the source.`}
-      </h1>
+          {/* Big Serif Heading matching Screenshot 3 */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal text-[#1A1815] tracking-tight leading-tight mb-4">
+            {isSociology
+              ? 'Explain inequality from the source.'
+              : `Master ${state.activeTopic} from the source.`}
+          </h1>
 
-      <p className="text-base sm:text-lg text-[#5A5348] font-normal leading-relaxed mb-5 max-w-2xl">
-        {subtitleByGoal[state.studyGoal]}
-      </p>
+          <p className="text-base sm:text-lg text-[#5A5348] font-normal leading-relaxed mb-5 max-w-2xl">
+            {subtitleByGoal[state.studyGoal]}
+          </p>
 
-      {/* Interactive Study Goal Focus Switcher */}
-      {onChangeStudyGoal && (
-        <div className="flex flex-wrap items-center gap-2 mb-8">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-[#8C8477] mr-1">
-            Focus:
-          </span>
-          {GOAL_LABELS.map((g) => (
-            <button
-              type="button"
-              key={g.id}
-              onClick={() => onChangeStudyGoal(g.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                state.studyGoal === g.id
-                  ? 'bg-[#1A1815] text-[#FAF7F0] border-[#1A1815] font-semibold'
-                  : 'bg-[#FAF7F0] text-[#5C5549] border-[#E0D8C8] hover:bg-[#EFEAE0]'
-              }`}
-            >
-              {g.label}
-            </button>
-          ))}
+          {/* Interactive Study Goal Focus Switcher */}
+          {onChangeStudyGoal && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[#8C8477] mr-1">
+                Focus:
+              </span>
+              {GOAL_LABELS.map((g) => (
+                <button
+                  type="button"
+                  key={g.id}
+                  onClick={() => onChangeStudyGoal(g.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    state.studyGoal === g.id
+                      ? 'bg-[#1A1815] text-[#FAF7F0] border-[#1A1815] font-semibold'
+                      : 'bg-[#FAF7F0] text-[#5C5549] border-[#E0D8C8] hover:bg-[#EFEAE0]'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="lg:col-span-5">
+          <div className="rounded-2xl overflow-hidden border border-[#E5DFD3] bg-[#FAF7F0] shadow-sm">
+            <img
+              src="/images/study-hero.jpg"
+              alt="Open study notebook with flashcards, fountain pen, and sage sprig on warm parchment"
+              className="w-full h-44 sm:h-52 object-cover"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Next Up Hero Card matching Screenshot 3 */}
       {pendingCount > 0 ? (
@@ -196,29 +211,37 @@ export const Overview: React.FC<OverviewProps> = ({
 
       {/* Workflow Explainer Banner matching Image 2 */}
       <div className="p-6 bg-[#F4EFE6] border border-[#E3D9C8] rounded-2xl mb-8">
-        <div className="flex items-start gap-4">
-          <span className="p-2 rounded-xl bg-[#E8DECE] text-[#784004] mt-0.5 shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </span>
-          <div>
-            <div className="text-[11px] font-bold tracking-widest uppercase text-[#784004] mb-1">
-              NOTHING SAVES WITHOUT A CHECK
-            </div>
-            <p className="text-sm text-[#4A4338] leading-relaxed mb-3">
-              Each item arrives with the sentence it came from, so checking it takes seconds. A knowledge base built without that step fills up with confident summaries nobody can trace.
-            </p>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="px-2.5 py-1 rounded-md bg-[#FAF7F0] text-[#5C5549] border border-[#E0D8C8]">
-                1. Read source fact
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-[#FAF7F0] text-[#5C5549] border border-[#E0D8C8]">
-                2. Verify accuracy
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-[#FAF7F0] text-[#5C5549] border border-[#E0D8C8]">
-                3. Decide: Approve, Edit, or Discard
-              </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <span className="p-2 rounded-xl bg-[#E8DECE] text-[#784004] mt-0.5 shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="text-[11px] font-bold tracking-widest uppercase text-[#784004] mb-1">
+                NOTHING SAVES WITHOUT A CHECK
+              </div>
+              <p className="text-sm text-[#4A4338] leading-relaxed mb-3">
+                Each item arrives with the sentence it came from, so checking it takes seconds. A knowledge base built without that step fills up with confident summaries nobody can trace.
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-2.5 py-1 rounded-md bg-[#FAF7F0] text-[#5C5549] border border-[#E0D8C8]">
+                  1. Read source fact
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-[#FAF7F0] text-[#5C5549] border border-[#E0D8C8]">
+                  2. Verify accuracy
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-[#FAF7F0] text-[#5C5549] border border-[#E0D8C8]">
+                  3. Decide: Approve, Edit, or Discard
+                </span>
+              </div>
             </div>
           </div>
+
+          <img
+            src="/images/hitl-verify.jpg"
+            alt="Human-in-the-loop verification comparing source sentence with study interpretation"
+            className="hidden sm:block w-40 h-28 object-cover rounded-xl border border-[#DFD5C3] shadow-2xs shrink-0"
+          />
         </div>
       </div>
 
