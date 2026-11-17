@@ -343,12 +343,16 @@ export const App: React.FC = () => {
                 state={state}
                 setActiveTab={setActiveTab}
                 onOpenUploader={() => setIsUploaderOpen(true)}
+                onChangeStudyGoal={(goal) =>
+                  updateState((prev) => ({ ...prev, studyGoal: goal }))
+                }
               />
             )}
 
             {activeTab === 'review' && (
               <ReviewQueue
                 items={state.items}
+                studyGoal={state.studyGoal}
                 onApproveItem={handleApproveItem}
                 onDiscardItem={handleDiscardItem}
                 onRestoreToQueue={handleRestoreToQueue}

@@ -14,17 +14,27 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { NotebookState } from '../types';
+import { verifyGroundedness } from '../utils/extractor';
 
 interface OverviewProps {
   state: NotebookState;
   setActiveTab: (tab: string) => void;
   onOpenUploader: () => void;
+  onChangeStudyGoal?: (goal: NotebookState['studyGoal']) => void;
 }
+
+const GOAL_LABELS: Array<{ id: NotebookState['studyGoal']; label: string }> = [
+  { id: 'exam_review', label: 'Exam Review' },
+  { id: 'concept_recall', label: 'Concept Recall' },
+  { id: 'practical_howto', label: 'Practical How-To' },
+  { id: 'meeting_prep', label: 'Meeting Prep' },
+];
 
 export const Overview: React.FC<OverviewProps> = ({
   state,
   setActiveTab,
   onOpenUploader,
+  onChangeStudyGoal,
 }) => {
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
 
@@ -33,6 +43,9 @@ export const Overview: React.FC<OverviewProps> = ({
 
   const pendingCount = pendingItems.length;
   const approvedCount = approvedItems.length;
+  const flaggedPendingCount = pendingItems.filter(
+    (i) => verifyGroundedness(i.sourceFact, i.studyInterpretation).isSuspicious
+  ).length;
 
   const isSociology = state.activeTopic === 'Socialization & Stratification';
   const subtitleByGoal: Record<NotebookState['studyGoal'], string> = {
@@ -64,9 +77,32 @@ export const Overview: React.FC<OverviewProps> = ({
           : `Master ${state.activeTopic} from the source.`}
       </h1>
 
-      <p className="text-base sm:text-lg text-[#5A5348] font-normal leading-relaxed mb-8 max-w-2xl">
+      <p className="text-base sm:text-lg text-[#5A5348] font-normal leading-relaxed mb-5 max-w-2xl">
         {subtitleByGoal[state.studyGoal]}
       </p>
+
+      {/* Interactive Study Goal Focus Switcher */}
+      {onChangeStudyGoal && (
+        <div className="flex flex-wrap items-center gap-2 mb-8">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-[#8C8477] mr-1">
+            Focus:
+          </span>
+          {GOAL_LABELS.map((g) => (
+            <button
+              type="button"
+              key={g.id}
+              onClick={() => onChangeStudyGoal(g.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                state.studyGoal === g.id
+                  ? 'bg-[#1A1815] text-[#FAF7F0] border-[#1A1815] font-semibold'
+                  : 'bg-[#FAF7F0] text-[#5C5549] border-[#E0D8C8] hover:bg-[#EFEAE0]'
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Next Up Hero Card matching Screenshot 3 */}
       {pendingCount > 0 ? (
@@ -128,9 +164,14 @@ export const Overview: React.FC<OverviewProps> = ({
           <div className="text-4xl font-serif font-bold text-[#1A1815] mb-2 group-hover:text-[#9A3412] transition-colors">
             {pendingCount}
           </div>
-          <div className="text-xs text-[#7C7265] flex items-center gap-1.5">
+          <div className="text-xs text-[#7C7265] flex items-center gap-1.5 flex-wrap">
             <CheckSquare className="w-3.5 h-3.5 text-[#C05621]" />
             <span>Items waiting beside their source sentence</span>
+            {flaggedPendingCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10px] font-semibold border border-[#FDE68A]">
+                {flaggedPendingCount} check additions
+              </span>
+            )}
           </div>
         </div>
 

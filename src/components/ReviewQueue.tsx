@@ -8,8 +8,13 @@ import {
   HelpCircle,
   Tag,
   RotateCcw,
+  Search,
+  AlertTriangle,
+  Sparkles,
+  X,
 } from 'lucide-react';
-import { StudyItem } from '../types';
+import { NotebookState, StudyItem } from '../types';
+import { verifyGroundedness } from '../utils/extractor';
 import { ReviewCard } from './ReviewCard';
 import { EditModal } from './EditModal';
 import { MergeModal } from './MergeModal';
@@ -18,6 +23,7 @@ import confetti from 'canvas-confetti';
 
 interface ReviewQueueProps {
   items: StudyItem[];
+  studyGoal?: NotebookState['studyGoal'];
   onApproveItem: (id: string) => void;
   onDiscardItem: (id: string) => void;
   onRestoreToQueue?: (id: string) => void;
@@ -29,8 +35,16 @@ interface ReviewQueueProps {
   isModalBlocked?: boolean;
 }
 
+const GOAL_CATEGORY_PRIORITY: Record<NotebookState['studyGoal'], string[]> = {
+  exam_review: ['LECTURE CLAIM', 'CONCEPT', 'KEY TERM', 'PROCESS', 'SYSTEM', 'HOW-TO', 'QUESTION'],
+  concept_recall: ['KEY TERM', 'CONCEPT', 'LECTURE CLAIM', 'SYSTEM', 'PROCESS', 'HOW-TO', 'QUESTION'],
+  practical_howto: ['HOW-TO', 'PROCESS', 'SYSTEM', 'CONCEPT', 'KEY TERM', 'LECTURE CLAIM', 'QUESTION'],
+  meeting_prep: ['HOW-TO', 'QUESTION', 'PROCESS', 'LECTURE CLAIM', 'SYSTEM', 'CONCEPT', 'KEY TERM'],
+};
+
 export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   items,
+  studyGoal = 'exam_review',
   onApproveItem,
   onDiscardItem,
   onRestoreToQueue,
@@ -45,6 +59,9 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [queueSearch, setQueueSearch] = useState<string>('');
+  const [flaggedOnly, setFlaggedOnly] = useState<boolean>(false);
+  const [sortByGoal, setSortByGoal] = useState<boolean>(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeHintActive, setMergeHintActive] = useState(false);
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
@@ -73,12 +90,31 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
   // Ensure selectedTag stays valid if all items of a tag are reviewed
   const activeTag = tags.includes(selectedTag) ? selectedTag : 'All';
+  const flaggedCount = pendingItems.filter(
+    (i) => verifyGroundedness(i.sourceFact, i.studyInterpretation).isSuspicious
+  ).length;
 
-  const filteredItems = pendingItems.filter((item) => {
+  const baseFilteredItems = pendingItems.filter((item) => {
     const matchesTag = activeTag === 'All' || item.tag === activeTag;
     const matchesCat = selectedCategory === 'All' || item.category === selectedCategory;
-    return matchesTag && matchesCat;
+    const matchesFlagged =
+      !flaggedOnly || verifyGroundedness(item.sourceFact, item.studyInterpretation).isSuspicious;
+    const q = queueSearch.toLowerCase().trim();
+    const matchesQuery =
+      !q ||
+      item.title.toLowerCase().includes(q) ||
+      item.sourceFact.toLowerCase().includes(q) ||
+      item.studyInterpretation.toLowerCase().includes(q) ||
+      item.tag.toLowerCase().includes(q);
+    return matchesTag && matchesCat && matchesFlagged && matchesQuery;
   });
+
+  const filteredItems = sortByGoal
+    ? [...baseFilteredItems].sort((a, b) => {
+        const order = GOAL_CATEGORY_PRIORITY[studyGoal];
+        return order.indexOf(a.category) - order.indexOf(b.category);
+      })
+    : baseFilteredItems;
 
   // Restrict selection actions strictly to visible filtered items so hidden items aren't silently mutated
   const visibleSelectedIds = filteredItems.filter((i) => selectedIds.has(i.id)).map((i) => i.id);
@@ -293,6 +329,61 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             );
           })}
         </div>
+
+        {/* Row 3: Search, Groundedness Flag Filter, and Goal-Priority Sort */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-3.5 h-3.5 text-[#8C8477] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search queue by claim or quote..."
+              value={queueSearch}
+              onChange={(e) => setQueueSearch(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 bg-[#F5F2EB] border border-[#DDD5C7] rounded-xl text-xs text-[#1A1815] focus:outline-none focus:border-[#C05621]"
+            />
+            {queueSearch && (
+              <button
+                type="button"
+                aria-label="Clear queue search"
+                onClick={() => setQueueSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C8477] hover:text-[#1A1815]"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap text-[11px]">
+            {flaggedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setFlaggedOnly((prev) => !prev)}
+                className={`px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 border transition-colors ${
+                  flaggedOnly
+                    ? 'bg-[#FEF3C7] text-[#92400E] border-[#F59E0B]'
+                    : 'bg-[#FAF4EA] text-[#B45309] border-[#FDE68A] hover:bg-[#FEF3C7]/70'
+                }`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                <span>Check Additions ({flaggedCount})</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setSortByGoal((prev) => !prev)}
+              className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1 border transition-colors ${
+                sortByGoal
+                  ? 'bg-[#E7F0E9] text-[#2B5738] border-[#A3D7BD] font-semibold'
+                  : 'bg-[#F5F2EB] text-[#5A5348] border-[#DDD5C7] hover:bg-[#ECE6DB]'
+              }`}
+              title="Reorder queue according to active Study Focus"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Goal Priority</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Undo Toast Banner */}
@@ -475,6 +566,8 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             onClick={() => {
               setSelectedTag('All');
               setSelectedCategory('All');
+              setQueueSearch('');
+              setFlaggedOnly(false);
             }}
             className="px-4 py-2 bg-[#1A1815] text-white text-xs font-semibold rounded-lg"
           >

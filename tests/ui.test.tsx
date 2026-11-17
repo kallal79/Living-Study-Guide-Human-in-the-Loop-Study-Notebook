@@ -345,4 +345,31 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Retag$/i }));
     expect(screen.getByText(/Tagged 2 cards as "Midterm Review"/i)).toBeTruthy();
   });
+
+  it('switches live study focus on Overview, renders Library Guide & Concept Page, and reveals Study Session spotlight card', async () => {
+    render(<App />);
+    await screen.findByText('Explain inequality from the source.');
+
+    // Live Overview Focus switcher
+    fireEvent.click(screen.getByRole('button', { name: 'Practical How-To' }));
+    expect(screen.getByText('HOW-TO SYSTEM GUIDE')).toBeTruthy();
+
+    // Library Source-Linked Guide view + Concept Page Modal
+    fireEvent.click(screen.getByRole('button', { name: /^Library$/i }));
+    fireEvent.click(screen.getByTitle('Source-linked summary and how-to guides view'));
+    expect(screen.getByText(/Socialization Study Guide/i)).toBeTruthy();
+    expect(screen.getByText(/Stratification Study Guide/i)).toBeTruthy();
+
+    // Open Concept Page via card button after switching to Cards view
+    fireEvent.click(screen.getByTitle('Side-by-side cards view'));
+    fireEvent.click(screen.getAllByTitle('Open concept page')[0]);
+    expect(screen.getByText(/VERIFIED INTERPRETATION/i)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Close concept page'));
+
+    // Study Session Spotlight Recall Card
+    fireEvent.click(screen.getByRole('button', { name: /^Study session$/i }));
+    expect(screen.getByText(/SPOTLIGHT RECALL CARD/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Source Quote/i }));
+    expect(screen.getByRole('button', { name: /Hide Source/i })).toBeTruthy();
+  });
 });

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, CheckCircle2, Check } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Play, Pause, RotateCcw, CheckCircle2, Check, RefreshCw, Eye } from 'lucide-react';
 import { NotebookState, StudySessionLog } from '../types';
 import { playTone } from '../utils/sound';
 import confetti from 'canvas-confetti';
@@ -21,6 +21,14 @@ export const StudySession: React.FC<StudySessionProps> = ({
   const [checkedSteps, setCheckedSteps] = useState<Set<number>>(new Set());
   const [sessionNotes, setSessionNotes] = useState('');
   const [completed, setCompleted] = useState(false);
+
+  const approvedCards = useMemo(
+    () => state.items.filter((i) => i.status === 'approved'),
+    [state.items]
+  );
+  const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [spotlightRevealed, setSpotlightRevealed] = useState(false);
+  const [spotlightSourceOpen, setSpotlightSourceOpen] = useState(false);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -60,10 +68,9 @@ export const StudySession: React.FC<StudySessionProps> = ({
   };
 
   const handleFinishSession = () => {
-    const elapsedMinutes = Math.max(
-      1,
-      Math.round((durationMinutes * 60 - secondsRemaining) / 60) || durationMinutes
-    );
+    const secondsElapsed = Math.max(0, durationMinutes * 60 - secondsRemaining);
+    const elapsedMinutes =
+      secondsElapsed > 0 ? Math.max(1, Math.round(secondsElapsed / 60)) : durationMinutes;
     const log: StudySessionLog = {
       id: `session-${Date.now().toString(36)}`,
       date: new Date().toISOString(),
@@ -84,7 +91,9 @@ export const StudySession: React.FC<StudySessionProps> = ({
   const formatTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const pendingCount = state.items.filter((i) => i.status === 'pending').length;
-  const approvedCount = state.items.filter((i) => i.status === 'approved').length;
+  const approvedCount = approvedCards.length;
+  const spotlightItem =
+    approvedCards.length > 0 ? approvedCards[spotlightIndex % approvedCards.length] : null;
 
   return (
     <div className="max-w-3xl mx-auto py-8 sm:py-10 px-4 sm:px-6">
@@ -172,6 +181,63 @@ export const StudySession: React.FC<StudySessionProps> = ({
           )}
         </div>
       </div>
+
+      {/* Live Spotlight Recall Card while Studying */}
+      {spotlightItem && (
+        <div className="p-5 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl mb-8 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#2B5738]">
+              SPOTLIGHT RECALL CARD ({(spotlightIndex % approvedCards.length) + 1}/{approvedCards.length})
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSpotlightIndex((i) => (i + 1) % approvedCards.length);
+                setSpotlightRevealed(false);
+                setSpotlightSourceOpen(false);
+                playTone('flip');
+              }}
+              className="flex items-center gap-1 text-xs font-semibold text-[#8C5209] hover:underline"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Next Card</span>
+            </button>
+          </div>
+          <h4 className="text-lg font-serif font-bold text-[#1A1815] mb-2">
+            {spotlightItem.flashcard.front}
+          </h4>
+          {spotlightRevealed && (
+            <p className="text-sm text-[#2C2824] bg-[#F2F0E8] border border-[#E2DBD0] p-3 rounded-xl mb-3 animate-fade-in">
+              {spotlightItem.studyInterpretation}
+            </p>
+          )}
+          {spotlightSourceOpen && (
+            <p className="text-xs italic font-serif text-[#4A4338] bg-[#F7EFE2] border border-[#E8DCBE] p-3 rounded-xl mb-3 animate-fade-in">
+              &ldquo;{spotlightItem.sourceFact}&rdquo;
+            </p>
+          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                playTone('flip');
+                setSpotlightRevealed((prev) => !prev);
+              }}
+              className="px-3 py-1.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold transition-colors"
+            >
+              {spotlightRevealed ? 'Hide Answer' : 'Reveal Answer'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSpotlightSourceOpen((prev) => !prev)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#F7EFE1] hover:bg-[#F2E5D0] text-[#784004] border border-[#ECD9BC] rounded-lg text-xs font-semibold transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>{spotlightSourceOpen ? 'Hide Source' : 'Source Quote'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Guided 3-Step Routine */}
       <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl mb-8">

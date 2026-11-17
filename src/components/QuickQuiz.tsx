@@ -71,6 +71,10 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
   const [bestStreak, setBestStreak] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [missedItemIds, setMissedItemIds] = useState<string[]>([]);
+  const [answerHistory, setAnswerHistory] = useState<
+    Array<{ question: GeneratedQuizQuestion; selectedIdx: number; isCorrect: boolean }>
+  >([]);
+  const [showFullBreakdown, setShowFullBreakdown] = useState(false);
   const [isMissedOnlyMode, setIsMissedOnlyMode] = useState(false);
 
   const seenSignaturesRef = useRef<string[]>([]);
@@ -135,6 +139,8 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
       setBestStreak(0);
       setIsComplete(false);
       setMissedItemIds([]);
+      setAnswerHistory([]);
+      setShowFullBreakdown(false);
       setIsLoadingQuiz(false);
     },
     [approved, items, activeTag, selectedStyle, quizScope]
@@ -170,6 +176,10 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
     setIsAnswered(true);
 
     const isCorrect = idx === currentQ.correctOptionIndex;
+    setAnswerHistory((prev) => [
+      ...prev,
+      { question: currentQ, selectedIdx: idx, isCorrect },
+    ]);
     if (isCorrect) {
       playTone('correct');
       setScore((prev) => prev + 1);
@@ -303,8 +313,58 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
                 <span>Retry Missed ({missedItems.length})</span>
               </button>
             )}
+
+            {answerHistory.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowFullBreakdown((prev) => !prev)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#FAF7F0] hover:bg-[#EFEAE0] text-[#4A4338] border border-[#DDD5C7] rounded-xl text-xs font-semibold transition-colors"
+              >
+                <span>{showFullBreakdown ? 'Hide Breakdown' : `Review Answers (${answerHistory.length})`}</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Optional All-Questions Answer Breakdown */}
+        {showFullBreakdown && answerHistory.length > 0 && (
+          <div className="space-y-2.5 mb-6 pt-6 border-t border-[#E8E2D5]">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#2B5738]">
+              Full Answer Breakdown &amp; Citations
+            </h3>
+            {answerHistory.map((entry, idx) => (
+              <div
+                key={`${entry.question.id}-${idx}`}
+                className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                  entry.isCorrect
+                    ? 'bg-[#E7F0E9]/60 border-[#BDDDC2]'
+                    : 'bg-[#FCE8E8]/60 border-[#F2B6B6]'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-serif font-bold text-sm text-[#1A1815]">
+                    {idx + 1}. {entry.question.title} ({entry.question.formatLabel})
+                  </span>
+                  <span
+                    className={`font-bold uppercase text-[10px] px-2 py-0.5 rounded-full ${
+                      entry.isCorrect
+                        ? 'bg-[#2B5738] text-white'
+                        : 'bg-[#8C2C2C] text-white'
+                    }`}
+                  >
+                    {entry.isCorrect ? 'Correct' : 'Missed'}
+                  </span>
+                </div>
+                <p className="text-[#2C2824]">
+                  Answer: <strong>{entry.question.options[entry.question.correctOptionIndex]}</strong>
+                </p>
+                <p className="italic font-serif text-[#5A5348]">
+                  &ldquo;{entry.question.sourceFact}&rdquo;
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Missed Questions Breakdown */}
         {missedItems.length > 0 && (

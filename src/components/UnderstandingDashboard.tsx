@@ -1,6 +1,7 @@
 import React from 'react';
-import { ArrowRight, Sparkles, BookOpen, Tag, Calendar, Clock } from 'lucide-react';
+import { ArrowRight, Sparkles, BookOpen, Tag, Calendar, Clock, ShieldCheck } from 'lucide-react';
 import { NotebookState } from '../types';
+import { verifyGroundedness } from '../utils/extractor';
 
 interface UnderstandingDashboardProps {
   state: NotebookState;
@@ -41,6 +42,23 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
   const totalNotesWithLens = state.items.length;
   const sessionsCount = state.sessions.length;
   const foundationGoal = Math.min(8, activeItems.length || 8);
+  const masteredCards = approvedItems.filter((i) => (i.flashcard.leitnerBox || 1) >= 3).length;
+  const cleanGroundedCount = approvedItems.filter(
+    (i) => !verifyGroundedness(i.sourceFact, i.studyInterpretation).isSuspicious
+  ).length;
+  const faithfulnessPct =
+    approvedItems.length > 0
+      ? Math.round((cleanGroundedCount / approvedItems.length) * 100)
+      : 100;
+  const quizSessions = state.sessions.filter((s) => s.quizTotal > 0);
+  const avgQuizPct =
+    quizSessions.length > 0
+      ? Math.round(
+          (quizSessions.reduce((acc, s) => acc + s.quizScore / s.quizTotal, 0) /
+            quizSessions.length) *
+            100
+        )
+      : null;
 
   const coverageHeading =
     approvedItems.length === 0
@@ -142,8 +160,8 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
         </div>
       </div>
 
-      {/* Three Metric Cards matching Screenshot 4 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+      {/* Four Metric Cards matching Screenshot 4 + Groundedness Health */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Review Habit */}
         <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 text-xs font-medium text-[#7A7264] mb-3">
@@ -183,6 +201,20 @@ export const UnderstandingDashboard: React.FC<UnderstandingDashboardProps> = ({
           </div>
           <div className="text-xs text-[#7A7264]">
             ways to find a thread
+          </div>
+        </div>
+
+        {/* Source Faithfulness & Flashcard Mastery */}
+        <div className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-medium text-[#7A7264] mb-3">
+            <ShieldCheck className="w-4 h-4 text-[#2B5738]" />
+            <span>Groundedness</span>
+          </div>
+          <div className="text-3xl font-serif font-bold text-[#1A1815] mb-1">
+            {faithfulnessPct}%
+          </div>
+          <div className="text-xs text-[#7A7264]">
+            clean &bull; {masteredCards} Box 3+ mastered{avgQuizPct !== null ? ` • ${avgQuizPct}% quiz` : ''}
           </div>
         </div>
       </div>

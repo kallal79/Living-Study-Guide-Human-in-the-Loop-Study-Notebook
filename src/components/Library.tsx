@@ -8,14 +8,17 @@ import {
   FileText,
   LayoutGrid,
   List,
+  BookOpen,
   HelpCircle,
   ShieldCheck,
   Printer,
   RotateCcw,
   X,
+  Compass,
 } from 'lucide-react';
 import { StudyItem } from '../types';
 import { exportLibraryMarkdown, exportAnkiCSV } from '../utils/storage';
+import { verifyGroundedness } from '../utils/extractor';
 import { EditModal } from './EditModal';
 
 interface LibraryProps {
@@ -42,8 +45,9 @@ export const Library: React.FC<LibraryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table' | 'guide'>('cards');
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
+  const [inspectedItem, setInspectedItem] = useState<StudyItem | null>(null);
 
   const tags = ['All', ...Array.from(new Set(approvedItems.map((i) => i.tag)))];
   const categories = ['All', ...Array.from(new Set(approvedItems.map((i) => i.category)))];
@@ -195,6 +199,16 @@ export const Library: React.FC<LibraryProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => setViewMode('guide')}
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'guide' ? 'bg-[#FAF7F0] text-[#1A1815] shadow-sm' : 'text-[#7A7264]'
+              }`}
+              title="Source-linked summary and how-to guides view"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'table' ? 'bg-[#FAF7F0] text-[#1A1815] shadow-sm' : 'text-[#7A7264]'
@@ -233,6 +247,14 @@ export const Library: React.FC<LibraryProps> = ({
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 no-print shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setInspectedItem(item)}
+                      title="Open concept page"
+                      className="p-1.5 text-[#6B6355] hover:bg-[#EFEAE0] hover:text-[#1A1815] rounded-lg transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => onFlipCardWithItem(item)}
@@ -279,7 +301,10 @@ export const Library: React.FC<LibraryProps> = ({
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-serif font-bold text-[#1A1815] mb-3">
+                <h3
+                  onClick={() => setInspectedItem(item)}
+                  className="text-xl font-serif font-bold text-[#1A1815] mb-3 cursor-pointer hover:text-[#8C5209] transition-colors"
+                >
                   {item.title}
                 </h3>
 
@@ -313,6 +338,108 @@ export const Library: React.FC<LibraryProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        ) : viewMode === 'guide' ? (
+          /* Source-Linked Topic Summaries, Concept Pages & How-To Guides View */
+          <div className="space-y-6">
+            {Array.from(new Set(filtered.map((i) => i.tag))).map((topicTag) => {
+              const groupItems = filtered.filter((i) => i.tag === topicTag);
+              const howToItems = groupItems.filter((i) =>
+                ['HOW-TO', 'PROCESS', 'SYSTEM'].includes(i.category)
+              );
+              const coreItems = groupItems.filter(
+                (i) => !['HOW-TO', 'PROCESS', 'SYSTEM'].includes(i.category)
+              );
+
+              return (
+                <section
+                  key={topicTag}
+                  className="p-6 bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl shadow-sm space-y-5"
+                >
+                  <div className="flex items-center justify-between border-b border-[#EAE4D7] pb-3">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-[#8C8477]">
+                        SOURCE-LINKED TOPIC SUMMARY
+                      </div>
+                      <h3 className="text-2xl font-serif font-bold text-[#1A1815]">
+                        {topicTag} Study Guide ({groupItems.length})
+                      </h3>
+                    </div>
+                  </div>
+
+                  {coreItems.length > 0 && (
+                    <div className="space-y-2.5">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[#2B5738]">
+                        Key Concepts &amp; Verified Claims
+                      </div>
+                      <div className="space-y-2.5">
+                        {coreItems.map((it) => (
+                          <div
+                            key={it.id}
+                            className="p-3.5 rounded-xl bg-[#F5F2EB] border border-[#E2DBD0] flex flex-col gap-1.5"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setInspectedItem(it)}
+                                className="text-sm font-serif font-bold text-[#1A1815] hover:text-[#8C5209] text-left"
+                              >
+                                {it.title}
+                              </button>
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#FAF7F0] text-[#8C5209] border border-[#ECD9BC]">
+                                {it.category}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#2C2824] leading-relaxed">
+                              {it.studyInterpretation}
+                            </p>
+                            <p className="text-[11px] italic font-serif text-[#7A7264] border-l-2 border-[#C05621] pl-2.5">
+                              &ldquo;{it.sourceFact}&rdquo;
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {howToItems.length > 0 && (
+                    <div className="space-y-2.5 pt-2">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[#9A3412] flex items-center gap-1.5">
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>How-To Guides &amp; System Processes</span>
+                      </div>
+                      <ol className="space-y-2.5">
+                        {howToItems.map((it, stepIdx) => (
+                          <li
+                            key={it.id}
+                            className="p-3.5 rounded-xl bg-[#F7EFE2] border border-[#E8DCBE] space-y-1.5"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setInspectedItem(it)}
+                                className="text-sm font-serif font-bold text-[#1A1815] hover:text-[#8C5209] text-left"
+                              >
+                                {stepIdx + 1}. {it.title}
+                              </button>
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white text-[#9A3412]">
+                                {it.category}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#2C2824] leading-relaxed">
+                              {it.studyInterpretation}
+                            </p>
+                            <p className="text-[11px] italic font-serif text-[#5A5348]">
+                              Source Basis: &ldquo;{it.sourceFact}&rdquo;
+                            </p>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         ) : (
           /* Table View */
@@ -388,6 +515,121 @@ export const Library: React.FC<LibraryProps> = ({
               Reset Search &amp; Filters
             </button>
           )}
+        </div>
+      )}
+
+      {/* Concept Page Modal */}
+      {inspectedItem && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setInspectedItem(null);
+          }}
+          className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto no-print"
+        >
+          <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl relative my-4 space-y-5">
+            <div className="flex items-start justify-between gap-3 border-b border-[#E8E2D5] pb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#E6EFF8] text-[#1D4E89]">
+                    {inspectedItem.tag}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#F7EFE1] text-[#8C5209]">
+                    {inspectedItem.category}
+                  </span>
+                  <span className="text-[11px] font-mono text-[#2B5738] font-semibold">
+                    {Math.round(
+                      verifyGroundedness(inspectedItem.sourceFact, inspectedItem.studyInterpretation)
+                        .groundedScore * 100
+                    )}
+                    % overlap &bull; Box {inspectedItem.flashcard.leitnerBox || 1}/5
+                  </span>
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-[#1A1815]">
+                  {inspectedItem.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Close concept page"
+                onClick={() => setInspectedItem(null)}
+                className="p-1.5 rounded-lg text-[#7A7264] hover:bg-[#EFEAE0]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-[#F7EFE2] border border-[#E8DCBE]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#9A3412] mb-1">
+                  SOURCE FACT
+                </div>
+                <p className="text-sm font-serif italic text-[#2C2824] leading-relaxed">
+                  &ldquo;{inspectedItem.sourceFact}&rdquo;
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#F2F0E8] border border-[#E2DBD0]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#5A5348] mb-1">
+                  VERIFIED INTERPRETATION
+                </div>
+                <p className="text-sm text-[#1A1815] leading-relaxed">
+                  {inspectedItem.studyInterpretation}
+                </p>
+              </div>
+            </div>
+
+            {approvedItems.filter((i) => i.tag === inspectedItem.tag && i.id !== inspectedItem.id)
+              .length > 0 && (
+              <div className="pt-2 border-t border-[#EAE4D7]">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#8C8477] mb-2">
+                  Related {inspectedItem.tag} Concepts
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {approvedItems
+                    .filter((i) => i.tag === inspectedItem.tag && i.id !== inspectedItem.id)
+                    .map((rel) => (
+                      <button
+                        type="button"
+                        key={rel.id}
+                        onClick={() => setInspectedItem(rel)}
+                        className="px-3 py-1 rounded-lg bg-[#F5F2EB] hover:bg-[#EAE3D2] text-xs font-medium text-[#1A1815] border border-[#DDD5C7] transition-colors"
+                      >
+                        {rel.title}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#E8E2D5]">
+              <span className="text-xs text-[#7A7264] truncate max-w-xs">
+                {inspectedItem.sourceCitation}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = inspectedItem;
+                    setInspectedItem(null);
+                    onFlipCardWithItem(target);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#F7EFE1] hover:bg-[#F2E5D0] text-[#784004] border border-[#ECD9BC]"
+                >
+                  Practice Flashcard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = inspectedItem;
+                    setInspectedItem(null);
+                    onStartQuizWithItem(target);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#2B5738] hover:bg-[#22452D] text-white"
+                >
+                  Quiz on Concept
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
