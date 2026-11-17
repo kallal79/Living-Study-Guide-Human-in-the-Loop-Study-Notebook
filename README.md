@@ -6,6 +6,26 @@ An implementation of the **Living Study Guide** mission, featuring a human-in-th
 
 ---
 
+## 🖼️ App Previews & Illustrations
+
+| Understanding Dashboard | Overview Workspace |
+| :---: | :---: |
+| ![Understanding Dashboard](./submission/cover-dashboard-understanding.png) | ![Overview Study Guide](./submission/overview-study-guide.png) |
+
+| Human-in-the-Loop Review Queue | Dynamic Quick Quiz |
+| :---: | :---: |
+| ![Review Queue](./submission/review-queue-hitl.png) | ![Quick Quiz](./submission/quick-quiz-dynamic.png) |
+
+| Approved Library | Recall Flashcards | Focused Study Session |
+| :---: | :---: | :---: |
+| ![Library](./submission/library-approved-cards.png) | ![Flashcards](./submission/flashcards-recall.png) | ![Study Session](./submission/study-session-timer.png) |
+
+| Study Desk Artwork | HITL Verification Seal |
+| :---: | :---: |
+| ![Study Hero Illustration](./public/images/study-hero.jpg) | ![HITL Verification Illustration](./public/images/hitl-verify.jpg) |
+
+---
+
 ## 🏛️ Core Philosophy: Nothing Saves Without A Check
 
 ```
