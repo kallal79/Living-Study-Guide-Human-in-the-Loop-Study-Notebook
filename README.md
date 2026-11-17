@@ -6,7 +6,7 @@ An implementation of the **Living Study Guide** mission, featuring a human-in-th
 
 ---
 
-## 🏛️ Core Philosophy: Nothing Saves Without A Check
+##  Core Philosophy: Nothing Saves Without A Check
 
 ```
 +-------------------------------------------------------------+
