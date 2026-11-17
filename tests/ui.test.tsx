@@ -39,6 +39,7 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
   let quizGenerateCalls = 0;
 
   beforeEach(() => {
+    window.location.hash = '';
     quizGenerateCalls = 0;
     const ls = createMemoryStorage();
     const ss = createMemoryStorage();

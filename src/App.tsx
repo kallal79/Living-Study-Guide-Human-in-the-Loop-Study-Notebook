@@ -19,10 +19,29 @@ import { ReplitPreviewBanner } from './components/ReplitPreviewBanner';
 import { MissionFlowModal } from './components/MissionFlowModal';
 
 const SESSION_UNLOCK_KEY = 'living_study_guide_unlocked';
+const VALID_TABS = new Set([
+  'overview',
+  'review',
+  'library',
+  'flashcards',
+  'quiz',
+  'session',
+  'understanding',
+]);
+
+function readTabFromHash(): string {
+  try {
+    const raw = window.location.hash.replace(/^#\/?/, '').trim();
+    return VALID_TABS.has(raw) ? raw : 'overview';
+  } catch {
+    return 'overview';
+  }
+}
 
 export const App: React.FC = () => {
   const [state, setState] = useState<NotebookState>(() => structuredClone(initialNotebookState));
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTabState] = useState<string>(readTabFromHash);
+  const [isLoadingState, setIsLoadingState] = useState<boolean>(true);
   const [isUnlocked, setIsUnlocked] = useState<boolean>(true);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
   const [isUploaderOpen, setIsUploaderOpen] = useState<boolean>(false);
@@ -31,6 +50,27 @@ export const App: React.FC = () => {
   const [targetItemId, setTargetItemId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const setActiveTab = (tab: string) => {
+    const clean = VALID_TABS.has(tab) ? tab : 'overview';
+    setActiveTabState(clean);
+    try {
+      if (window.location.hash !== `#${clean}`) {
+        window.history.replaceState(null, '', `#${clean}`);
+      }
+    } catch {
+      // Ignore hash restrictions
+    }
+  };
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = readTabFromHash();
+      setActiveTabState(next);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -38,21 +78,25 @@ export const App: React.FC = () => {
     }, 3500);
   };
 
-  // Initialize and load saved state
+  // Initialize and load saved state without flashing private content prior to lock check
   useEffect(() => {
     let active = true;
-    loadNotebookState().then((loaded) => {
-      if (!active) return;
-      setState(loaded);
-      if (loaded.isLocked) {
-        const sessionOk =
-          typeof sessionStorage !== 'undefined' &&
-          sessionStorage.getItem(SESSION_UNLOCK_KEY) === '1';
-        setIsUnlocked(sessionOk);
-      } else {
-        setIsUnlocked(true);
-      }
-    });
+    loadNotebookState()
+      .then((loaded) => {
+        if (!active) return;
+        setState(loaded);
+        if (loaded.isLocked) {
+          const sessionOk =
+            typeof sessionStorage !== 'undefined' &&
+            sessionStorage.getItem(SESSION_UNLOCK_KEY) === '1';
+          setIsUnlocked(sessionOk);
+        } else {
+          setIsUnlocked(true);
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingState(false);
+      });
     return () => {
       active = false;
     };
@@ -298,9 +342,23 @@ export const App: React.FC = () => {
     return false;
   };
 
+  // Phase IV: Never reveal private content while verifying lock status
+  if (isLoadingState) {
+    return (
+      <div className="min-h-screen bg-[#FBF9F5] flex items-center justify-center p-6 text-xs text-[#7A7264] font-medium">
+        Loading private notebook...
+      </div>
+    );
+  }
+
   // Phase IV: Locked screen check
   if (state.isLocked && !isUnlocked) {
-    return <PrivateLockScreen onUnlock={handleUnlock} />;
+    return (
+      <PrivateLockScreen
+        onUnlock={handleUnlock}
+        hasCustomPasscode={state.passcode !== '1234'}
+      />
+    );
   }
 
   return (

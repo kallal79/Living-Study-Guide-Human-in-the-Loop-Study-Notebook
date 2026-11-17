@@ -95,9 +95,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarContent = (
     <div className="w-64 bg-[#F5F2EB] border-r border-[#E5DFD3] flex flex-col justify-between h-full select-none text-[#2C2824]">
       {/* Top Section */}
-      <div className="p-5 flex flex-col flex-1 overflow-y-auto">
+      <div className="p-4 flex flex-col flex-1 overflow-y-auto">
         {/* Notebook Title Badge & Preset Switcher */}
-        <div ref={presetRef} className="mb-6 relative">
+        <div ref={presetRef} className="mb-4 relative">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2 min-w-0">
               <span className="p-1.5 rounded-lg bg-[#EAE3D2] text-[#8C5209] shrink-0">
@@ -179,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="text-[11px] font-bold tracking-wider text-[#928B7E] uppercase px-2 mb-2">
           Your Notebook
         </div>
-        <nav className="space-y-1 mb-5">
+        <nav className="space-y-0.5 mb-4">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -188,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-[#EAE3D2] text-[#1A1815] shadow-sm font-semibold'
                     : 'text-[#5C5549] hover:bg-[#EFEAE0] hover:text-[#1A1815]'
@@ -240,8 +240,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Bottom Progress & Settings matching Screenshot 4 */}
-      <div className="p-5 border-t border-[#E5DFD3] bg-[#EFEBE0]/60">
-        <div className="mb-3">
+      <div className="p-4 border-t border-[#E5DFD3] bg-[#EFEBE0]/60">
+        <div className="mb-2">
           <div className="flex justify-between items-center text-xs mb-1.5 font-medium text-[#5C5549]">
             <span>Notebook complete</span>
             <span className="font-bold text-[#1A1815]">{completionPercentage}%</span>

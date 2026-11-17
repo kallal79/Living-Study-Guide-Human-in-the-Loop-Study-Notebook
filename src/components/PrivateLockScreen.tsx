@@ -3,9 +3,13 @@ import { Lock, ShieldCheck, KeyRound, ArrowRight } from 'lucide-react';
 
 interface PrivateLockScreenProps {
   onUnlock: (passcode: string) => boolean;
+  hasCustomPasscode?: boolean;
 }
 
-export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({ onUnlock }) => {
+export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({
+  onUnlock,
+  hasCustomPasscode = false,
+}) => {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
 
@@ -54,7 +58,7 @@ export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({ onUnlock }
             <KeyRound className="w-4 h-4 text-[#8C8477] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="password"
-              placeholder="Enter passcode (default: 1234)"
+              placeholder={hasCustomPasscode ? 'Enter your passcode' : 'Enter passcode (default: 1234)'}
               value={passcode}
               onChange={(e) => {
                 setPasscode(e.target.value);
@@ -81,7 +85,13 @@ export const PrivateLockScreen: React.FC<PrivateLockScreenProps> = ({ onUnlock }
         </form>
 
         <div className="mt-6 pt-6 border-t border-[#EAE4D7] text-xs text-[#8C8477]">
-          Default Passcode: <span className="font-mono font-semibold text-[#1A1815]">1234</span>
+          {hasCustomPasscode ? (
+            <span>Owner authentication required to access study material</span>
+          ) : (
+            <>
+              Default Passcode: <span className="font-mono font-semibold text-[#1A1815]">1234</span>
+            </>
+          )}
         </div>
         </div>
       </div>

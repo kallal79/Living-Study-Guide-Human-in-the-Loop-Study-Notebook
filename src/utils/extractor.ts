@@ -13,11 +13,27 @@ export const STOP_WORDS = new Set([
   'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each',
   'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
   'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 'this', 'that',
-  'these', 'those', 'it', 'its', 'as', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does'
+  'these', 'those', 'it', 'its', 'as', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does',
+  'our', 'their', 'they', 'we', 'you', 'without', 'across', 'while', 'whether', 'rather', 'vs',
+  'versus', 'often', 'also', 'may', 'might', 'can', 'could', 'would', 'within', 'among', 'across',
 ]);
 
 export function stemWord(w: string): string {
-  return w.replace(/(ing|ed|es|s|tion|ly|ment|al|ive)$/, '');
+  return w.replace(/(izations?|ations?|ities|ness|ment|ings?|able|ible|ence|ance|ive|ous|ing|ed|es|ly|al|s)$/, '');
+}
+
+function wordsMatchCognate(word: string, sourceWords: Set<string>, sourceStems: Set<string>): boolean {
+  const s = stemWord(word);
+  if (sourceWords.has(word) || sourceStems.has(s)) return true;
+  if (s.length >= 4) {
+    const prefix = s.slice(0, 5);
+    for (const sw of sourceStems) {
+      if (sw.length >= 4 && (sw.startsWith(prefix) || s.startsWith(sw.slice(0, 5)))) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -45,8 +61,7 @@ export function getGroundedTokens(sourceFact: string, interpretation: string): A
       return { text: token, isGrounded: true, isStopWord: false };
     }
     const isStop = STOP_WORDS.has(cleaned);
-    const s = stemWord(cleaned);
-    const isGrounded = isStop || sourceSet.has(cleaned) || sourceStems.has(s);
+    const isGrounded = isStop || wordsMatchCognate(cleaned, sourceSet, sourceStems);
 
     return {
       text: token,
@@ -86,8 +101,7 @@ export function verifyGroundedness(sourceFact: string, interpretation: string): 
   let supportedCount = 0;
 
   for (const word of interpWords) {
-    const s = stemWord(word);
-    if (sourceWords.has(word) || sourceStems.has(s)) {
+    if (wordsMatchCognate(word, sourceWords, sourceStems)) {
       supportedCount++;
     } else {
       unsupported.push(word);
