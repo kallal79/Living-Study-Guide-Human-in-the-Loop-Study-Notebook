@@ -16,6 +16,20 @@ When source excerpts are brief, automated summaries often add outside assumption
 - **Study Session & Understanding Dashboard**: Timed focus sessions (`5`, `15`, `25`, `45` minutes) with a Spotlight Recall card, optional Web Audio ambient sound presets, and progress analytics covering coverage, sessions logged, and groundedness rate.
 - **Ingestion, Lock Screen & Backups**: Upload `.txt`/`.md`/`.json` files or create single cards directly, lock the notebook behind a passcode, and download or restore full JSON backups persisted via `server/data/database.json`.
 
+## Screenshots
+
+| Overview | Review Queue |
+| :---: | :---: |
+| ![Overview](./screenshots/overview.png) | ![Review Queue](./screenshots/review-queue.png) |
+
+| Understanding Dashboard | Dynamic Quick Quiz |
+| :---: | :---: |
+| ![Understanding Dashboard](./screenshots/understanding-dashboard.png) | ![Quick Quiz](./screenshots/quick-quiz.png) |
+
+| Library | Flashcards | Study Session |
+| :---: | :---: | :---: |
+| ![Library](./screenshots/library.png) | ![Flashcards](./screenshots/flashcards.png) | ![Study Session](./screenshots/study-session.png) |
+
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite 6, Tailwind CSS, Lucide Icons
