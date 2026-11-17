@@ -88,7 +88,12 @@ const SettingsModalInner: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+    >
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-xl p-6 sm:p-7 shadow-2xl relative my-4">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-5">

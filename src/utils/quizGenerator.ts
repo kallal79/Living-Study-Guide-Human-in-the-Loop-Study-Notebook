@@ -192,7 +192,7 @@ function buildQuestionForFormat(
   }
 
   if (format === 'grounding_check') {
-    const cleanBase = item.studyInterpretation.replace(/\.$/, '');
+    const cleanBase = item.studyInterpretation.replace(/[.!?]+$/, '');
     const addedAssumption = `${cleanBase}, primarily driven by unverified historical pressures and external decrees.`;
     const absoluteOverreach = `${cleanBase}, applying universally without exception across every recorded era.`;
     const siblingInterp =
@@ -233,11 +233,18 @@ function buildQuestionForFormat(
   }
 
   if (format === 'source_verify') {
-    // Alternates whether we present the faithful claim OR an over-extrapolated claim
+    // Alternates whether we present the faithful claim OR one of several realistic extrapolated claims
+    const extrapolations = [
+      'exclusively because of unstated economic mandates',
+      'without any involvement from social institutions or peers',
+      'even though the source notes call this mechanism obsolete',
+      'solely as a byproduct of temporary wartime regulations',
+    ];
     const showExtrapolated = Math.random() >= 0.5;
-    const cleanBase = item.studyInterpretation.replace(/\.$/, '');
+    const pickedExtra = extrapolations[Math.floor(Math.random() * extrapolations.length)];
+    const cleanBase = item.studyInterpretation.replace(/[.!?]+$/, '');
     const candidateClaim = showExtrapolated
-      ? `${cleanBase} exclusively because of unstated economic mandates.`
+      ? `${cleanBase} ${pickedExtra}.`
       : item.studyInterpretation;
 
     const verifyOptions = [
@@ -262,7 +269,7 @@ function buildQuestionForFormat(
       options,
       correctOptionIndex,
       explanation: showExtrapolated
-        ? `Caution: "exclusively because of unstated economic mandates" was added and is not in your source.`
+        ? `Caution: "${pickedExtra}" was added and is not in your source.`
         : `Verified: The candidate claim stays faithful to "${item.sourceFact}".`,
       sourceFact: item.sourceFact,
       sourceCitation: item.sourceCitation,

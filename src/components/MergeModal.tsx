@@ -32,7 +32,12 @@ const MergeModalInner: React.FC<MergeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+    >
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative">
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-5">
           <div className="flex items-center gap-2">
@@ -49,7 +54,9 @@ const MergeModalInner: React.FC<MergeModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close merge modal"
             className="p-1.5 rounded-lg text-[#7A7264] hover:bg-[#EFEAE0] transition-colors"
           >
             <X className="w-5 h-5" />

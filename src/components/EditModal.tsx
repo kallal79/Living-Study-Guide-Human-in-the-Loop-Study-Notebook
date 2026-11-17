@@ -8,6 +8,7 @@ interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedItem: StudyItem, approveImmediately?: boolean) => void;
+  availableTags?: string[];
 }
 
 export const EditModal: React.FC<EditModalProps> = (props) => {
@@ -19,6 +20,7 @@ const EditModalInner: React.FC<EditModalProps & { item: StudyItem }> = ({
   item,
   onClose,
   onSave,
+  availableTags = [],
 }) => {
   const [title, setTitle] = useState(item.title);
   const [tag, setTag] = useState(item.tag);
@@ -63,7 +65,12 @@ const EditModalInner: React.FC<EditModalProps & { item: StudyItem }> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+    >
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative my-4">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-5">
@@ -107,11 +114,37 @@ const EditModalInner: React.FC<EditModalProps & { item: StudyItem }> = ({
               </label>
               <input
                 type="text"
+                list="edit-modal-tags"
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
                 placeholder="e.g. Socialization"
                 className="w-full px-3 py-2 bg-[#F5F2EB] border border-[#DDD5C7] rounded-lg text-sm text-[#1A1815] focus:outline-none focus:border-[#C05621]"
               />
+              {availableTags.length > 0 && (
+                <>
+                  <datalist id="edit-modal-tags">
+                    {availableTags.map((t) => (
+                      <option key={t} value={t} />
+                    ))}
+                  </datalist>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {availableTags.slice(0, 5).map((t) => (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => setTag(t)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                          tag === t
+                            ? 'bg-[#1D4E89] text-white border-[#1D4E89]'
+                            : 'bg-[#F5F2EB] text-[#5A5348] border-[#DDD5C7] hover:bg-[#EAE3D2]'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#5A5348] mb-1">

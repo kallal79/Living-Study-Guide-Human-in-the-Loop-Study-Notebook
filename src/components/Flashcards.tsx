@@ -19,6 +19,7 @@ interface FlashcardsProps {
   onUpdateItemProgress: (itemId: string, leitnerBox: number, wasCorrect: boolean) => void;
   targetItemId?: string | null;
   onClearTargetItem?: () => void;
+  isModalBlocked?: boolean;
 }
 
 export const Flashcards: React.FC<FlashcardsProps> = ({
@@ -26,6 +27,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
   onUpdateItemProgress,
   targetItemId,
   onClearTargetItem,
+  isModalBlocked = false,
 }) => {
   const approvedItems = useMemo(
     () => items.filter((i) => i.status === 'approved'),
@@ -132,7 +134,12 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
   // Keyboard controls for rapid study
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (
+        isModalBlocked ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        return;
+      }
       if (deck.length === 0) return;
 
       if (e.code === 'Space') {
@@ -157,7 +164,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFlipped, safeIndex, deck]);
+  }, [isFlipped, safeIndex, deck, isModalBlocked]);
 
   if (approvedItems.length === 0) {
     return (

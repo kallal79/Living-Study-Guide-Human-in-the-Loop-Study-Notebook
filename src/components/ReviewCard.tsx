@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Edit3, Trash2, FileText, AlertTriangle, ShieldCheck, Eye } from 'lucide-react';
+import { Check, Edit3, Trash2, FileText, AlertTriangle, ShieldCheck, Eye, Tag } from 'lucide-react';
 import { StudyItem } from '../types';
 import { verifyGroundedness, getGroundedTokens } from '../utils/extractor';
 
@@ -10,6 +10,8 @@ interface ReviewCardProps {
   onApprove: (id: string) => void;
   onEdit: (item: StudyItem) => void;
   onDiscard: (id: string) => void;
+  onQuickTag?: (id: string, newTag: string) => void;
+  availableTags?: string[];
   showKeyboardShortcuts?: boolean;
 }
 
@@ -20,11 +22,24 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   onApprove,
   onEdit,
   onDiscard,
+  onQuickTag,
+  availableTags = [],
   showKeyboardShortcuts = false,
 }) => {
   const [highlightGrounded, setHighlightGrounded] = useState(false);
+  const [isEditingTag, setIsEditingTag] = useState(false);
+  const [tagDraft, setTagDraft] = useState(item.tag);
+
   const groundedAnalysis = verifyGroundedness(item.sourceFact, item.studyInterpretation);
   const tokens = getGroundedTokens(item.sourceFact, item.studyInterpretation);
+
+  const commitQuickTag = () => {
+    const clean = tagDraft.trim();
+    if (clean && clean !== item.tag) {
+      onQuickTag?.(item.id, clean);
+    }
+    setIsEditingTag(false);
+  };
 
   return (
     <div
@@ -35,19 +50,72 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       }`}
     >
       {/* Top Header: Checkbox + Tags */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div className="flex items-center gap-2.5 flex-wrap">
           <input
             type="checkbox"
+            aria-label={`Select ${item.title}`}
             checked={isSelected}
             onChange={() => onToggleSelect(item.id)}
             className="w-4 h-4 rounded text-[#C05621] focus:ring-[#C05621] border-[#C8BFB0] cursor-pointer"
           />
 
-          {/* Primary Tag (e.g. SOCIALIZATION, STRATIFICATION) */}
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#E6EFF8] text-[#1D4E89] border border-[#CCDCEE]">
-            {item.tag}
-          </span>
+          {/* Primary Tag (inline quick-retaggable if onQuickTag provided) */}
+          {isEditingTag ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                commitQuickTag();
+              }}
+              className="inline-flex items-center gap-1"
+            >
+              <input
+                type="text"
+                aria-label="Edit topic tag"
+                list={`tags-list-${item.id}`}
+                value={tagDraft}
+                onChange={(e) => setTagDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setTagDraft(item.tag);
+                    setIsEditingTag(false);
+                  }
+                }}
+                autoFocus
+                className="px-2 py-0.5 text-[11px] bg-white border border-[#C05621] rounded-full text-[#1A1815] w-28 focus:outline-none"
+              />
+              {availableTags.length > 0 && (
+                <datalist id={`tags-list-${item.id}`}>
+                  {availableTags.map((t) => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
+              )}
+              <button
+                type="submit"
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2B5738] text-white"
+              >
+                Save
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (onQuickTag) {
+                  setTagDraft(item.tag);
+                  setIsEditingTag(true);
+                }
+              }}
+              title={onQuickTag ? 'Click to rename or reassign tag' : undefined}
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#E6EFF8] text-[#1D4E89] border border-[#CCDCEE] inline-flex items-center gap-1 ${
+                onQuickTag ? 'hover:bg-[#DCE9F5] cursor-pointer transition-colors' : 'cursor-default'
+              }`}
+            >
+              {onQuickTag && <Tag className="w-2.5 h-2.5 opacity-70" />}
+              <span>{item.tag}</span>
+            </button>
+          )}
 
           {/* Category Tag (e.g. LECTURE CLAIM, KEY TERM) */}
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#F7EFE1] text-[#8C5209] border border-[#ECD9BC]">
@@ -64,6 +132,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         {/* Groundedness Pill & Word Highlighter Toggle */}
         <div className="flex items-center gap-2 text-[11px]">
           <button
+            type="button"
             onClick={() => setHighlightGrounded(!highlightGrounded)}
             className={`px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors border ${
               highlightGrounded
@@ -183,6 +252,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => onEdit(item)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F2EB] hover:bg-[#ECE6DB] text-[#4A4338] border border-[#DCD5C8] rounded-lg text-xs font-medium transition-colors"
           >
@@ -192,6 +262,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => onDiscard(item.id)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent hover:bg-[#FCE8E8] text-[#8C2C2C] hover:border-[#E8B4B4] border border-transparent rounded-lg text-xs font-medium transition-colors"
           >

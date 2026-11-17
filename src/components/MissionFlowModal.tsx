@@ -28,7 +28,12 @@ const MissionFlowModalInner: React.FC<MissionFlowModalProps> = ({ onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+    >
       <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-3xl w-full max-w-3xl p-8 shadow-2xl relative">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5] mb-6">
@@ -46,7 +51,9 @@ const MissionFlowModalInner: React.FC<MissionFlowModalProps> = ({ onClose }) => 
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close modal"
             className="p-1.5 rounded-lg text-[#7A7264] hover:bg-[#EFEAE0] transition-colors"
           >
             <X className="w-5 h-5" />

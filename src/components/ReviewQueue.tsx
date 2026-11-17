@@ -23,8 +23,10 @@ interface ReviewQueueProps {
   onRestoreToQueue?: (id: string) => void;
   onUpdateItem: (updated: StudyItem, approveImmediately?: boolean) => void;
   onMergeItems: (itemIds: string[], mergedTitle: string, mergedInterpretation: string) => void;
+  onBulkRetag?: (itemIds: string[], newTag: string) => void;
   onOpenUploader: () => void;
   setActiveTab: (tab: string) => void;
+  isModalBlocked?: boolean;
 }
 
 export const ReviewQueue: React.FC<ReviewQueueProps> = ({
@@ -34,8 +36,10 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   onRestoreToQueue,
   onUpdateItem,
   onMergeItems,
+  onBulkRetag,
   onOpenUploader,
   setActiveTab,
+  isModalBlocked = false,
 }) => {
   const pendingItems = items.filter((i) => i.status === 'pending');
 
@@ -46,13 +50,15 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [bulkTagDraft, setBulkTagDraft] = useState('');
   const [lastAction, setLastAction] = useState<{
     id: string;
     title: string;
     action: 'approved' | 'discarded';
   } | null>(null);
 
-  // Extract unique tags and categories from pending items
+  // Extract unique tags and categories from pending + existing items
+  const allNotebookTags = Array.from(new Set(items.filter((i) => i.status !== 'discarded').map((i) => i.tag)));
   const tags = ['All', ...Array.from(new Set(pendingItems.map((i) => i.tag)))];
   const categories: Array<string> = [
     'All',
@@ -74,10 +80,15 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
     return matchesTag && matchesCat;
   });
 
+  // Restrict selection actions strictly to visible filtered items so hidden items aren't silently mutated
+  const visibleSelectedIds = filteredItems.filter((i) => selectedIds.has(i.id)).map((i) => i.id);
+  const visibleSelectedSet = new Set(visibleSelectedIds);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
+        isModalBlocked ||
         editingItem ||
         isMergeModalOpen ||
         showShortcutsModal ||
@@ -101,7 +112,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
       } else if ((e.key === 'e' || e.key === 'E') && filteredItems.length > 0) {
         e.preventDefault();
         setEditingItem(filteredItems[0]);
-      } else if ((e.key === 'm' || e.key === 'M') && selectedIds.size >= 2) {
+      } else if ((e.key === 'm' || e.key === 'M') && visibleSelectedIds.length >= 2) {
         e.preventDefault();
         setIsMergeModalOpen(true);
       }
@@ -109,7 +120,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredItems, selectedIds, editingItem, isMergeModalOpen, showShortcutsModal]);
+  }, [filteredItems, visibleSelectedIds.length, editingItem, isMergeModalOpen, showShortcutsModal, isModalBlocked]);
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -124,7 +135,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.size === filteredItems.length) {
+    if (visibleSelectedIds.length === filteredItems.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredItems.map((i) => i.id)));
@@ -167,19 +178,36 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
   const handleBulkApprove = () => {
     confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-    selectedIds.forEach((id) => onApproveItem(id));
+    playTone('approve');
+    visibleSelectedIds.forEach((id) => onApproveItem(id));
     setSelectedIds(new Set());
     setMergeHintActive(false);
   };
 
   const handleBulkDiscard = () => {
-    selectedIds.forEach((id) => onDiscardItem(id));
+    playTone('discard');
+    visibleSelectedIds.forEach((id) => onDiscardItem(id));
     setSelectedIds(new Set());
     setMergeHintActive(false);
   };
 
+  const handleBulkTagApply = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = bulkTagDraft.trim();
+    if (!clean || visibleSelectedIds.length === 0) return;
+    if (onBulkRetag) {
+      onBulkRetag(visibleSelectedIds, clean);
+    } else {
+      visibleSelectedIds.forEach((id) => {
+        const target = items.find((i) => i.id === id);
+        if (target) onUpdateItem({ ...target, tag: clean });
+      });
+    }
+    setBulkTagDraft('');
+  };
+
   const handleMergeButtonClick = () => {
-    if (selectedIds.size >= 2) {
+    if (visibleSelectedIds.length >= 2) {
       setMergeHintActive(false);
       setIsMergeModalOpen(true);
     } else {
@@ -187,7 +215,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
     }
   };
 
-  const selectedItemsForMerge = pendingItems.filter((i) => selectedIds.has(i.id));
+  const selectedItemsForMerge = filteredItems.filter((i) => visibleSelectedSet.has(i.id));
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
@@ -225,15 +253,15 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             <button
               type="button"
               onClick={handleMergeButtonClick}
-              disabled={filteredItems.length < 2 && selectedIds.size < 2}
+              disabled={filteredItems.length < 2 && visibleSelectedIds.length < 2}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors flex items-center gap-1.5 ${
-                filteredItems.length < 2 && selectedIds.size < 2
+                filteredItems.length < 2 && visibleSelectedIds.length < 2
                   ? 'opacity-40 cursor-not-allowed bg-[#E8E2D5] text-[#8C8477]'
                   : 'bg-[#EAE3D2] text-[#784004] hover:bg-[#E2D8C3] border border-[#D5C9B4]'
               }`}
             >
               <GitMerge className="w-3.5 h-3.5" />
-              <span>{selectedIds.size >= 2 ? `MERGE (${selectedIds.size})` : 'SELECT TO MERGE'}</span>
+              <span>{visibleSelectedIds.length >= 2 ? `MERGE (${visibleSelectedIds.length})` : 'SELECT TO MERGE'}</span>
             </button>
           </div>
         </div>
@@ -296,7 +324,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
       )}
 
       {/* Merge Guidance Banner when user clicks Select to Merge with < 2 selected */}
-      {mergeHintActive && selectedIds.size < 2 && filteredItems.length >= 2 && (
+      {mergeHintActive && visibleSelectedIds.length < 2 && filteredItems.length >= 2 && (
         <div className="mb-4 px-4 py-3 bg-[#FAF4EA] border border-[#ECDDC8] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#784004] animate-fade-in">
           <span>
             Check the boxes on any <strong>2 or more cards</strong> below to combine them into a single concept card.
@@ -338,23 +366,47 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
         </button>
       </div>
 
-      {/* Floating Bulk Action Bar when items selected */}
-      {selectedIds.size > 0 && (
+      {/* Floating Bulk Action Bar when visible items selected */}
+      {visibleSelectedIds.length > 0 && (
         <div className="mb-6 p-3.5 bg-[#FAF4EA] border border-[#ECDDC8] rounded-xl flex flex-wrap items-center justify-between gap-4 shadow-sm animate-fade-in">
           <div className="flex items-center gap-2 text-xs font-medium text-[#5A5348]">
             <input
               type="checkbox"
-              checked={selectedIds.size === filteredItems.length && filteredItems.length > 0}
+              aria-label="Select all visible cards"
+              checked={visibleSelectedIds.length === filteredItems.length && filteredItems.length > 0}
               onChange={handleSelectAll}
               className="w-4 h-4 rounded text-[#C05621] focus:ring-[#C05621] border-[#C8BFB0] cursor-pointer"
             />
             <span>
-              <strong>{selectedIds.size}</strong> selected
+              <strong>{visibleSelectedIds.length}</strong> selected
             </span>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {selectedIds.size >= 2 && (
+            <form onSubmit={handleBulkTagApply} className="flex items-center gap-1">
+              <input
+                type="text"
+                list="bulk-tags-datalist"
+                placeholder="Retag selected..."
+                value={bulkTagDraft}
+                onChange={(e) => setBulkTagDraft(e.target.value)}
+                className="px-2.5 py-1 bg-white border border-[#D5C9B4] rounded-lg text-xs text-[#1A1815] w-32 focus:outline-none focus:border-[#C05621]"
+              />
+              <datalist id="bulk-tags-datalist">
+                {allNotebookTags.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+              <button
+                type="submit"
+                disabled={!bulkTagDraft.trim()}
+                className="px-2.5 py-1 bg-[#EAE3D2] hover:bg-[#E2D8C3] disabled:opacity-40 text-[#784004] border border-[#D5C9B4] rounded-lg text-xs font-semibold transition-colors"
+              >
+                Retag
+              </button>
+            </form>
+
+            {visibleSelectedIds.length >= 2 && (
               <button
                 type="button"
                 onClick={() => setIsMergeModalOpen(true)}
@@ -371,7 +423,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2B5738] hover:bg-[#22452D] text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Approve All ({selectedIds.size})</span>
+              <span>Approve All ({visibleSelectedIds.length})</span>
             </button>
 
             <button
@@ -393,11 +445,20 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
             <ReviewCard
               key={item.id}
               item={item}
-              isSelected={selectedIds.has(item.id)}
+              isSelected={visibleSelectedSet.has(item.id)}
               onToggleSelect={handleToggleSelect}
               onApprove={handleApprove}
               onEdit={(it) => setEditingItem(it)}
               onDiscard={handleDiscard}
+              onQuickTag={(id, newTag) => {
+                if (onBulkRetag) {
+                  onBulkRetag([id], newTag);
+                } else {
+                  const target = items.find((i) => i.id === id);
+                  if (target) onUpdateItem({ ...target, tag: newTag });
+                }
+              }}
+              availableTags={allNotebookTags}
               showKeyboardShortcuts={idx === 0}
             />
           ))}
@@ -456,11 +517,18 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
         item={editingItem}
         isOpen={Boolean(editingItem)}
         onClose={() => setEditingItem(null)}
+        availableTags={allNotebookTags}
         onSave={(updated, approveImmediately) => {
           onUpdateItem(updated, approveImmediately);
           setEditingItem(null);
           if (approveImmediately) {
             playTone('approve');
+            setLastAction({ id: updated.id, title: updated.title, action: 'approved' });
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              next.delete(updated.id);
+              return next;
+            });
           }
         }}
       />
@@ -481,7 +549,12 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcutsModal && (
-        <div className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowShortcutsModal(false);
+          }}
+          className="fixed inset-0 z-50 bg-[#1A1815]/50 backdrop-blur-sm flex items-center justify-center p-4"
+        >
           <div className="bg-[#FAF7F0] border border-[#E0D8C8] rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5] mb-4">
               <h3 className="text-base font-serif font-bold text-[#1A1815] flex items-center gap-2">

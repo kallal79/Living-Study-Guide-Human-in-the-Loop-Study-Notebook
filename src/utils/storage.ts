@@ -120,18 +120,22 @@ export async function fetchGeneratedQuiz(
   };
 }
 
-export function downloadBackup(state: NotebookState) {
-  const jsonStr = JSON.stringify(state, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
+function triggerBlobDownload(content: string, mimeType: string, filename: string): void {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const dateStr = new Date().toISOString().split('T')[0];
   a.href = url;
-  a.download = `living-study-guide-backup-${dateStr}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadBackup(state: NotebookState) {
+  const jsonStr = JSON.stringify(state, null, 2);
+  const dateStr = new Date().toISOString().split('T')[0];
+  triggerBlobDownload(jsonStr, 'application/json', `living-study-guide-backup-${dateStr}.json`);
 }
 
 export function exportLibraryMarkdown(items: StudyItem[], notebookName: string): void {
@@ -147,15 +151,11 @@ export function exportLibraryMarkdown(items: StudyItem[], notebookName: string):
     md += `---\n\n`;
   }
 
-  const blob = new Blob([md], { type: 'text/markdown' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${notebookName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-study-guide.md`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerBlobDownload(
+    md,
+    'text/markdown',
+    `${notebookName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-study-guide.md`
+  );
 }
 
 export function exportAnkiCSV(items: StudyItem[]): void {
@@ -166,17 +166,9 @@ export function exportAnkiCSV(items: StudyItem[]): void {
     const front = `"${item.flashcard.front.replace(/"/g, '""')}"`;
     const back = `"${item.flashcard.back.replace(/"/g, '""')}"`;
     const source = `"${item.sourceFact.replace(/"/g, '""')}"`;
-    const tag = `"${item.tag}"`;
+    const tag = `"${item.tag.replace(/"/g, '""')}"`;
     csv += `${front},${back},${source},${tag}\n`;
   }
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `anki-cards-grounded.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerBlobDownload(csv, 'text/csv;charset=utf-8;', 'anki-cards-grounded.csv');
 }

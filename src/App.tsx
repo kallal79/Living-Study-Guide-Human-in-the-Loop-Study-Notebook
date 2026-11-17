@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NotebookState, StudyItem, SourceDocument, StudySessionLog } from './types';
 import { initialNotebookState, sociologyNotebookState, awsNotebookState } from './data/initialData';
 import { loadNotebookState, saveNotebookState, downloadBackup } from './utils/storage';
+import { stopAmbientSound } from './utils/sound';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Overview } from './components/Overview';
@@ -259,6 +260,7 @@ export const App: React.FC = () => {
   };
 
   const handleLockNotebook = () => {
+    stopAmbientSound();
     try {
       sessionStorage.removeItem(SESSION_UNLOCK_KEY);
     } catch {
@@ -267,6 +269,21 @@ export const App: React.FC = () => {
     updateState((prev) => ({ ...prev, isLocked: true }));
     setIsUnlocked(false);
   };
+
+  const handleBulkRetag = (itemIds: string[], newTag: string) => {
+    const cleanTag = newTag.trim();
+    if (!cleanTag || itemIds.length === 0) return;
+    const idSet = new Set(itemIds);
+    updateState((prev) => ({
+      ...prev,
+      items: prev.items.map((i) =>
+        idSet.has(i.id) ? { ...i, tag: cleanTag, userEdited: true } : i
+      ),
+    }));
+    showToast(`Tagged ${itemIds.length} card${itemIds.length === 1 ? '' : 's'} as "${cleanTag}".`);
+  };
+
+  const isAppModalOpen = isUploaderOpen || isSettingsOpen || isMissionFlowOpen || isMobileNavOpen;
 
   const handleUnlock = (code: string) => {
     if (code === state.passcode) {
@@ -337,8 +354,10 @@ export const App: React.FC = () => {
                 onRestoreToQueue={handleRestoreToQueue}
                 onUpdateItem={handleUpdateItem}
                 onMergeItems={handleMergeItems}
+                onBulkRetag={handleBulkRetag}
                 onOpenUploader={() => setIsUploaderOpen(true)}
                 setActiveTab={setActiveTab}
+                isModalBlocked={isAppModalOpen}
               />
             )}
 
@@ -366,6 +385,7 @@ export const App: React.FC = () => {
                 onUpdateItemProgress={handleUpdateItemProgress}
                 targetItemId={targetItemId}
                 onClearTargetItem={() => setTargetItemId(null)}
+                isModalBlocked={isAppModalOpen}
               />
             )}
 
@@ -375,6 +395,7 @@ export const App: React.FC = () => {
                 targetItemId={targetItemId}
                 onClearTargetItem={() => setTargetItemId(null)}
                 onRecordQuizResult={handleRecordQuizResult}
+                isModalBlocked={isAppModalOpen}
               />
             )}
 

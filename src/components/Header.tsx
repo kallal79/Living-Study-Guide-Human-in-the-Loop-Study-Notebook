@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Unlock, Download, ShieldCheck, Volume2, VolumeX, CloudRain, Wind, Coffee, Menu } from 'lucide-react';
 import { NotebookState } from '../types';
-import { startAmbientSound, stopAmbientSound } from '../utils/sound';
+import {
+  startAmbientSound,
+  stopAmbientSound,
+  setAmbientVolume,
+  getAmbientVolume,
+  isSoundMuted,
+  setSoundMuted,
+} from '../utils/sound';
 
 interface HeaderProps {
   state: NotebookState;
@@ -20,8 +27,39 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [ambientActive, setAmbientActive] = useState(false);
   const [ambientPreset, setAmbientPreset] = useState<'rain' | 'zen' | 'library'>('rain');
+  const [ambientVol, setAmbientVol] = useState<number>(() => Math.round(getAmbientVolume() * 100));
+  const [chimesMuted, setChimesMuted] = useState<boolean>(() => isSoundMuted());
   const [showAmbientMenu, setShowAmbientMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const controlsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return () => {
+      stopAmbientSound();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showAmbientMenu && !showProfileMenu) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (controlsRef.current && !controlsRef.current.contains(e.target as Node)) {
+        setShowAmbientMenu(false);
+        setShowProfileMenu(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAmbientMenu(false);
+        setShowProfileMenu(false);
+      }
+    };
+    window.addEventListener('mousedown', handleOutside);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('mousedown', handleOutside);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [showAmbientMenu, showProfileMenu]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -35,13 +73,24 @@ export const Header: React.FC<HeaderProps> = ({
       setAmbientActive(false);
     } else {
       setAmbientPreset(preset);
-      startAmbientSound(preset, 0.08);
+      startAmbientSound(preset, ambientVol / 100);
       setAmbientActive(true);
     }
   };
 
+  const handleVolumeChange = (pct: number) => {
+    setAmbientVol(pct);
+    setAmbientVolume(pct / 100);
+  };
+
+  const handleToggleChimes = () => {
+    const next = !chimesMuted;
+    setChimesMuted(next);
+    setSoundMuted(next);
+  };
+
   return (
-    <header className="h-16 border-b border-[#E8E2D5] bg-[#FBF9F5]/95 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 gap-3">
+    <header className="h-16 border-b border-[#E8E2D5] bg-[#FBF9F5]/95 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 gap-3 no-print">
       {/* Mobile Menu Trigger + Breadcrumb matching Screenshot 3 */}
       <div className="flex items-center gap-3 text-xs tracking-wider uppercase font-semibold text-[#8C8477] min-w-0">
         {onOpenMobileNav && (
@@ -66,12 +115,15 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Action Controls & Ambient Focus Sound & Avatar */}
-      <div className="flex items-center gap-2 sm:gap-3 relative shrink-0">
+      <div ref={controlsRef} className="flex items-center gap-2 sm:gap-3 relative shrink-0">
         {/* Ambient Focus Audio Button */}
         <div className="relative">
           <button
             type="button"
-            onClick={() => setShowAmbientMenu(!showAmbientMenu)}
+            onClick={() => {
+              setShowProfileMenu(false);
+              setShowAmbientMenu(!showAmbientMenu);
+            }}
             title="Focus Ambient Sounds (Rain, Zen Stream, Quiet Room)"
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               ambientActive
@@ -93,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {showAmbientMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-[#FAF7F0] border border-[#DDD5C7] rounded-xl shadow-lg p-2 z-30 animate-fade-in text-xs space-y-1">
+            <div className="absolute right-0 mt-2 w-56 bg-[#FAF7F0] border border-[#DDD5C7] rounded-xl shadow-lg p-2 z-30 animate-fade-in text-xs space-y-1">
               <div className="px-2 py-1 text-[10px] font-bold uppercase text-[#8C8477]">
                 Ambient Background
               </div>
@@ -136,20 +188,49 @@ export const Header: React.FC<HeaderProps> = ({
                 <Coffee className="w-3.5 h-3.5 text-[#8C5209]" />
                 <span>Quiet Library Room</span>
               </button>
+
               {ambientActive && (
+                <div className="px-2.5 py-1.5 border-t border-[#EAE4D7] space-y-1">
+                  <div className="flex justify-between text-[10px] text-[#7A7264]">
+                    <span>Volume</span>
+                    <span className="font-mono">{ambientVol}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label="Ambient volume"
+                    min={1}
+                    max={25}
+                    value={ambientVol}
+                    onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                    className="w-full accent-[#2B5738] cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAmbientSound();
+                      setAmbientActive(false);
+                      setShowAmbientMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left text-[#8C2C2C] hover:bg-[#FCE8E8]"
+                  >
+                    <VolumeX className="w-3.5 h-3.5" />
+                    <span>Mute Ambient</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="pt-1 border-t border-[#EAE4D7]">
                 <button
                   type="button"
-                  onClick={() => {
-                    stopAmbientSound();
-                    setAmbientActive(false);
-                    setShowAmbientMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[#8C2C2C] hover:bg-[#FCE8E8] pt-1.5 border-t border-[#EAE4D7]"
+                  onClick={handleToggleChimes}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left hover:bg-[#EFEAE0] text-[#5A5348]"
                 >
-                  <VolumeX className="w-3.5 h-3.5" />
-                  <span>Mute Sound</span>
+                  <span>UI Feedback Chimes</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${chimesMuted ? 'bg-[#EAE4D7] text-[#7A7264]' : 'bg-[#E7F0E9] text-[#2B5738]'}`}>
+                    {chimesMuted ? 'Muted' : 'On'}
+                  </span>
                 </button>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -187,7 +268,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             type="button"
-            onClick={() => setShowProfileMenu((prev) => !prev)}
+            onClick={() => {
+              setShowAmbientMenu(false);
+              setShowProfileMenu((prev) => !prev);
+            }}
             className="w-8 h-8 rounded-full bg-[#EADCC8] text-[#7A3F05] flex items-center justify-center font-serif font-bold text-sm border border-[#DAC9AF] shadow-sm cursor-pointer select-none hover:ring-2 hover:ring-[#D5C9B4] transition-all"
             title="Private Notebook Owner"
           >

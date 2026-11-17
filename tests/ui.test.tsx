@@ -312,4 +312,37 @@ describe('Living Study Guide End-to-End UI & Main Page Verification', () => {
       expect(screen.getByText('Explain inequality from the source.')).toBeTruthy();
     });
   });
+
+  it('supports inline single-card and bulk re-tagging in Review Queue and audio chime toggle in Header', async () => {
+    render(<App />);
+    await screen.findByText('Explain inequality from the source.');
+
+    // Toggle UI chimes mute state inside Ambient Focus menu & dismiss via Escape
+    fireEvent.click(screen.getByRole('button', { name: /Ambient Focus/i }));
+    const chimesBtn = screen.getByRole('button', { name: /UI Feedback Chimes/i });
+    expect(screen.getByText('On')).toBeTruthy();
+    fireEvent.click(chimesBtn);
+    expect(screen.getByText('Muted')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: /UI Feedback Chimes/i })).toBeNull();
+
+    // Inline tag rename + bulk retag inside Review Queue
+    fireEvent.click(screen.getByRole('button', { name: /Review queue/i }));
+    const cardTagButtons = screen.getAllByTitle('Click to rename or reassign tag');
+    fireEvent.click(cardTagButtons[0]);
+    const tagInput = screen.getByLabelText('Edit topic tag');
+    fireEvent.change(tagInput, { target: { value: 'Exam Core' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save$/i }));
+    expect(screen.getByText(/Tagged 1 card as "Exam Core"/i)).toBeTruthy();
+
+    // Select two visible cards and bulk retag
+    const cardCheckbox = screen.getByLabelText('Select The self is social');
+    const secondCheckbox = screen.getByLabelText('Select People interpret social messages');
+    fireEvent.click(cardCheckbox);
+    fireEvent.click(secondCheckbox);
+    const bulkInput = screen.getByPlaceholderText('Retag selected...');
+    fireEvent.change(bulkInput, { target: { value: 'Midterm Review' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Retag$/i }));
+    expect(screen.getByText(/Tagged 2 cards as "Midterm Review"/i)).toBeTruthy();
+  });
 });

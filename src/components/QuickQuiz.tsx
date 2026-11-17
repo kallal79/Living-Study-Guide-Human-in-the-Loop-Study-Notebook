@@ -23,6 +23,7 @@ interface QuickQuizProps {
   targetItemId?: string | null;
   onClearTargetItem?: () => void;
   onRecordQuizResult?: (score: number, total: number, details?: string) => void;
+  isModalBlocked?: boolean;
 }
 
 const STYLE_OPTIONS: Array<{ id: QuizQuestionFormat | 'mixed'; label: string }> = [
@@ -40,6 +41,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
   targetItemId,
   onClearTargetItem,
   onRecordQuizResult,
+  isModalBlocked = false,
 }) => {
   const approved = useMemo(
     () => items.filter((i) => i.status === 'approved'),
@@ -73,6 +75,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
 
   const seenSignaturesRef = useRef<string[]>([]);
   const mountedRef = useRef(false);
+  const requestSeqRef = useRef(0);
 
   const activeTag = tags.includes(selectedTag) ? selectedTag : 'All';
 
@@ -90,6 +93,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
         return;
       }
 
+      const reqId = ++requestSeqRef.current;
       const tag = opts?.tag ?? activeTag;
       const style = opts?.style ?? selectedStyle;
       const scope = opts?.scope ?? quizScope;
@@ -107,6 +111,8 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
         excludeSignatures: seenSignaturesRef.current,
         targetItemId: opts?.focusItemId ?? null,
       });
+
+      if (reqId !== requestSeqRef.current) return;
 
       // Remember signatures so the next quiz rotates to different question styles
       const newSignatures = questions.map((q) => q.signature);
@@ -200,7 +206,12 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (
+        isModalBlocked ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        return;
+      }
       if (isComplete || quizDeck.length === 0 || isLoadingQuiz) return;
 
       if (!isAnswered) {
@@ -218,7 +229,7 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAnswered, isComplete, safeIdx, quizDeck, currentQ, score, isLoadingQuiz]);
+  }, [isAnswered, isComplete, safeIdx, quizDeck, currentQ, score, isLoadingQuiz, isModalBlocked]);
 
   if (approved.length === 0) {
     return (
@@ -458,8 +469,8 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
         />
       </div>
 
-      {/* Question Card */}
-      {currentQ && (
+      {/* Question Card or Empty Fallback */}
+      {currentQ ? (
         <div className="p-6 sm:p-7 bg-[#FAF7F0] border border-[#E8E2D5] rounded-3xl shadow-sm mb-6">
           {/* Format, Category & Tag Pills */}
           <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
@@ -487,8 +498,14 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
                 <React.Fragment key={idx}>
                   {part}
                   {idx < arr.length - 1 && (
-                    <span className="inline-block px-3 py-0.5 mx-1 bg-[#FAF7F0] border-b-2 border-[#C05621] font-mono not-italic text-xs font-bold text-[#9A3412] rounded">
-                      [ ? ]
+                    <span
+                      className={`inline-block px-3 py-0.5 mx-1 border-b-2 font-mono not-italic text-xs font-bold rounded ${
+                        isAnswered
+                          ? 'bg-[#E7F0E9] border-[#2B5738] text-[#0F5132]'
+                          : 'bg-[#FAF7F0] border-[#C05621] text-[#9A3412]'
+                      }`}
+                    >
+                      {isAnswered ? currentQ.options[currentQ.correctOptionIndex] : '[ ? ]'}
                     </span>
                   )}
                 </React.Fragment>
@@ -579,6 +596,25 @@ export const QuickQuiz: React.FC<QuickQuizProps> = ({
             )}
           </div>
         </div>
+      ) : (
+        !isLoadingQuiz && (
+          <div className="p-10 text-center bg-[#FAF7F0] border border-[#E8E2D5] rounded-2xl">
+            <p className="text-sm text-[#7A7264] mb-4">
+              No questions matched your current topic or format filter.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedTag('All');
+                setSelectedStyle('mixed');
+                loadFreshQuiz({ tag: 'All', style: 'mixed', incrementAttempt: true });
+              }}
+              className="px-4 py-2 bg-[#1A1815] text-white text-xs font-semibold rounded-lg"
+            >
+              Reset Quiz Filters
+            </button>
+          </div>
+        )
       )}
     </div>
   );

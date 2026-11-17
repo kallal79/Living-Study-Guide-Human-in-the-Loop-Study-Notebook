@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   CheckSquare,
@@ -41,6 +41,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const [showPresetDropdown, setShowPresetDropdown] = useState(false);
+  const presetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showPresetDropdown) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (presetRef.current && !presetRef.current.contains(e.target as Node)) {
+        setShowPresetDropdown(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowPresetDropdown(false);
+      }
+    };
+    window.addEventListener('mousedown', handleOutside);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('mousedown', handleOutside);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [showPresetDropdown]);
 
   const pendingCount = state.items.filter((i) => i.status === 'pending').length;
   const approvedCount = state.items.filter((i) => i.status === 'approved').length;
@@ -76,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Top Section */}
       <div className="p-5 flex flex-col flex-1 overflow-y-auto">
         {/* Notebook Title Badge & Preset Switcher */}
-        <div className="mb-6 relative">
+        <div ref={presetRef} className="mb-6 relative">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2 min-w-0">
               <span className="p-1.5 rounded-lg bg-[#EAE3D2] text-[#8C5209] shrink-0">
@@ -254,13 +275,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Desktop Sticky Sidebar */}
-      <aside className="hidden md:flex h-screen sticky top-0 shrink-0">
+      <aside className="hidden md:flex h-screen sticky top-0 shrink-0 no-print">
         {sidebarContent}
       </aside>
 
       {/* Mobile Slide-Over Drawer */}
       {isMobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex">
+        <div className="fixed inset-0 z-50 md:hidden flex no-print">
           <div
             className="fixed inset-0 bg-[#1A1815]/50 backdrop-blur-sm"
             onClick={onCloseMobile}

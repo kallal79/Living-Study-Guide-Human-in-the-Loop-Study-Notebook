@@ -2,6 +2,33 @@
 let audioCtx: AudioContext | null = null;
 let ambientSource: AudioNode | null = null;
 let ambientGain: GainNode | null = null;
+let currentAmbientVolume = 0.08;
+const MUTE_STORAGE_KEY = 'living_study_guide_muted';
+
+export function isSoundMuted(): boolean {
+  try {
+    if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+      return localStorage.getItem(MUTE_STORAGE_KEY) === '1';
+    }
+  } catch {
+    // Ignore restricted storage
+  }
+  return false;
+}
+
+export function setSoundMuted(muted: boolean): void {
+  try {
+    if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
+      localStorage.setItem(MUTE_STORAGE_KEY, muted ? '1' : '0');
+    }
+  } catch {
+    // Ignore restricted storage
+  }
+}
+
+export function getAmbientVolume(): number {
+  return currentAmbientVolume;
+}
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -18,6 +45,7 @@ function getAudioContext(): AudioContext | null {
 }
 
 export const playTone = (type: 'approve' | 'flip' | 'correct' | 'wrong' | 'discard') => {
+  if (isSoundMuted()) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -82,9 +110,14 @@ export const playTone = (type: 'approve' | 'flip' | 'correct' | 'wrong' | 'disca
  * Ambient White Noise Synthesizer (Rain, Zen Stream, Library Room)
  * Uses Web Audio API buffer synthesis with zero external files.
  */
-export const startAmbientSound = (type: 'rain' | 'zen' | 'library' = 'rain', volume = 0.08) => {
+export const startAmbientSound = (
+  type: 'rain' | 'zen' | 'library' = 'rain',
+  volume = currentAmbientVolume
+) => {
   try {
     stopAmbientSound();
+    const safeVol = Math.max(0, Math.min(0.25, volume));
+    currentAmbientVolume = safeVol;
     const ctx = getAudioContext();
     if (!ctx) return;
 
@@ -120,7 +153,7 @@ export const startAmbientSound = (type: 'rain' | 'zen' | 'library' = 'rain', vol
     }
 
     ambientGain = ctx.createGain();
-    ambientGain.gain.setValueAtTime(volume, ctx.currentTime);
+    ambientGain.gain.setValueAtTime(safeVol, ctx.currentTime);
 
     whiteNoise.connect(filter);
     filter.connect(ambientGain);
@@ -150,7 +183,9 @@ export const stopAmbientSound = () => {
 };
 
 export const setAmbientVolume = (vol: number) => {
+  const safeVol = Math.max(0, Math.min(0.25, vol));
+  currentAmbientVolume = safeVol;
   if (ambientGain && audioCtx) {
-    ambientGain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    ambientGain.gain.setValueAtTime(safeVol, audioCtx.currentTime);
   }
 };
