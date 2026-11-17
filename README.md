@@ -1,4 +1,4 @@
-# Living Study Guide 🧠📚
+# Living Study Guide 
 
 > **Turn your own notes into a private study guide that writes flashcards and quiz questions confidently grounded in only your trusted sources.**
 
@@ -6,7 +6,7 @@ An implementation of the **Living Study Guide** mission, featuring a human-in-th
 
 ---
 
-## 🖼️ App Previews & Illustrations
+## App Previews & Illustrations
 
 | Understanding Dashboard | Overview Workspace |
 | :---: | :---: |
@@ -26,7 +26,7 @@ An implementation of the **Living Study Guide** mission, featuring a human-in-th
 
 ---
 
-## 🏛️ Core Philosophy: Nothing Saves Without A Check
+## Core Philosophy: Nothing Saves Without A Check
 
 ```
 +-------------------------------------------------------------+
@@ -57,7 +57,7 @@ When source sentences are short, ungrounded AI tools tend to fill the void with 
 
 ---
 
-## ✨ Features & Navigation
+##  Features & Navigation
 
 1. **Overview Dashboard** (`#overview`):
    - Live Study Focus switcher (`Exam Review`, `Concept Recall`, `Practical How-To`, `Meeting Prep`)
@@ -106,7 +106,7 @@ When source sentences are short, ungrounded AI tools tend to fill the void with 
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
@@ -149,7 +149,7 @@ Creates an optimized production bundle in `/dist`.
 
 ---
 
-## 📋 Mission Verification Checklist
+##  Mission Verification Checklist
 
 - [x] **Phase I: Source Material Selection**: Pre-loaded with Sociology 101 (Mead, Cooley, Stratification) and AWS Cloud Practitioner Module 1.
 - [x] **Phase II: Core Architecture & UI**: Calm, professional, responsive reading experience matching all learner reference designs.
